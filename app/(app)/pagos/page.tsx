@@ -32,7 +32,7 @@ export default function PagosPage() {
   const [form, setForm] = useState<Omit<PagoEmpleado, "id">>({
     empleadoId: empleados[0]?.id ?? "",
     ordenId: ordenes[0]?.id ?? "",
-    etapa: "filmacion",
+    etapa: "relevamiento",
     monto: 0,
     estado: "pendiente",
     fecha: null,
@@ -54,7 +54,7 @@ export default function PagosPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapa: "filmacion", monto: 0, estado: "pendiente", fecha: null });
+    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapa: "relevamiento", monto: 0, estado: "pendiente", fecha: null });
     setModal(true);
   };
   const openEdit = (p: PagoEmpleado) => { setEditing(p); const { id, ...rest } = p; setForm(rest); setModal(true); };

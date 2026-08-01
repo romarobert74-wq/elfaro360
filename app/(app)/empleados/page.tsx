@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
 import { puestoLabels } from "@/lib/labels";
-import { formatCurrency, uid } from "@/lib/format";
+import { uid } from "@/lib/format";
 import type { Empleado, Puesto } from "@/lib/types";
 
 const puestoTone: Record<Puesto, "brand" | "violet" | "green" | "orange" | "navy"> = {
@@ -24,7 +24,7 @@ const puestoTone: Record<Puesto, "brand" | "violet" | "green" | "orange" | "navy
   administrativo: "navy",
 };
 
-const empty: Omit<Empleado, "id"> = { nombre: "", puesto: "relevador", telefono: "", email: "", tarifaDefault: 0 };
+const empty: Omit<Empleado, "id"> = { nombre: "", puesto: "relevador", telefono: "", email: "" };
 
 export default function EmpleadosPage() {
   const { empleados, addEmpleado, updateEmpleado, removeEmpleado, can } = useStore();
@@ -61,7 +61,7 @@ export default function EmpleadosPage() {
     },
     { key: "puesto", header: "Puesto", render: (e) => <Badge tone={puestoTone[e.puesto]}>{puestoLabels[e.puesto]}</Badge> },
     { key: "tel", header: "Teléfono", hideOnMobile: true, render: (e) => <span className="text-content-muted">{e.telefono || "—"}</span> },
-    { key: "tarifa", header: "Tarifa default", className: "text-right", render: (e) => <span className="font-medium tabular-nums">{formatCurrency(e.tarifaDefault)}</span> },
+    { key: "email", header: "Email", hideOnMobile: true, render: (e) => <span className="text-content-muted">{e.email || "—"}</span> },
     { key: "actions", header: "", className: "text-right w-24", render: (e) => <RowActions disabled={!editable} onEdit={() => openEdit(e)} onDelete={() => setToDelete(e)} /> },
   ];
 
@@ -102,9 +102,6 @@ export default function EmpleadosPage() {
               <option value="dron">Piloto de dron</option>
               <option value="administrativo">Administrativo</option>
             </Select>
-          </Field>
-          <Field label="Tarifa por defecto">
-            <TextInput type="number" min={0} value={form.tarifaDefault} onChange={(e) => setForm({ ...form, tarifaDefault: Number(e.target.value) })} />
           </Field>
           <Field label="Teléfono">
             <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />

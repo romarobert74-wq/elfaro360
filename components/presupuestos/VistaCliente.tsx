@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icon";
 import { computeQuote } from "@/lib/calc";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { metodoPagoLabels } from "@/lib/labels";
-import { settings } from "@/lib/mock-data";
+import { appSettings } from "@/lib/mock-data";
 import type { Cliente, Destino, Presupuesto } from "@/lib/types";
 
 /**
@@ -98,16 +98,34 @@ export function VistaCliente({
           </tbody>
         </table>
 
-        {/* Totales (vista cliente: subtotal, IVA, total) */}
+        {/* Totales (vista cliente) */}
         <div className="ml-auto w-64 text-sm">
           <div className="flex justify-between py-1 text-neutral-600">
+            <span>Servicios</span>
+            <span className="tabular-nums">{formatCurrency(calc.materialesFact)}</span>
+          </div>
+          {calc.traslado > 0 && (
+            <div className="flex justify-between py-1 text-neutral-600">
+              <span>Traslado</span>
+              <span className="tabular-nums">{formatCurrency(calc.traslado)}</span>
+            </div>
+          )}
+          {calc.recargoCuotas > 0 && (
+            <div className="flex justify-between py-1 text-neutral-600">
+              <span>Recargo 2 cuotas</span>
+              <span className="tabular-nums">{formatCurrency(calc.recargoCuotas)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-neutral-200 py-1 text-neutral-600">
             <span>Subtotal</span>
             <span className="tabular-nums">{formatCurrency(calc.subtotal)}</span>
           </div>
-          <div className="flex justify-between py-1 text-neutral-600">
-            <span>IVA ({presupuesto.config.ivaPct}%)</span>
-            <span className="tabular-nums">{formatCurrency(calc.iva)}</span>
-          </div>
+          {presupuesto.config.conIva && (
+            <div className="flex justify-between py-1 text-neutral-600">
+              <span>IVA ({presupuesto.config.ivaPct}%)</span>
+              <span className="tabular-nums">{formatCurrency(calc.iva)}</span>
+            </div>
+          )}
           <div className="mt-1 flex justify-between border-t border-neutral-300 py-2 font-display text-base font-bold">
             <span>Total</span>
             <span className="tabular-nums text-[#007FFF]">{formatCurrency(calc.total)}</span>
@@ -118,7 +136,7 @@ export function VistaCliente({
         <div className="mt-6 border-t border-neutral-200 pt-4 text-xs text-neutral-500">
           <p><span className="font-semibold text-neutral-700">Método de pago:</span> {metodoPagoLabels[presupuesto.metodoPago]}</p>
           {presupuesto.notas && <p className="mt-1">{presupuesto.notas}</p>}
-          <p className="mt-3">{settings.empresa.nombre} · {settings.empresa.email} · {settings.empresa.telefono}</p>
+          <p className="mt-3">{appSettings.empresa.nombre} · {appSettings.empresa.email} · {appSettings.empresa.telefono}</p>
         </div>
       </div>
     </Modal>

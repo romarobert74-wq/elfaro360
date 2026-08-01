@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Guard } from "@/components/layout/Guard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { MonthYearFilter, matchPeriod, type PeriodValue } from "@/components/ui/MonthYearFilter";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,20 +28,27 @@ export default function PresupuestosPage() {
   const { presupuestos, clientes, destinos, ordenes, can, updatePresupuesto, removePresupuesto, addOrden, addCobro } = store;
   const editable = can("presupuestos", "edit");
   const [q, setQ] = useState("");
+  const [period, setPeriod] = useState<PeriodValue>({ year: null, month: null });
   const [vista, setVista] = useState<Presupuesto | null>(null);
   const [toDelete, setToDelete] = useState<Presupuesto | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
 
+  const years = useMemo(
+    () => Array.from(new Set(presupuestos.map((p) => Number(p.fecha.slice(0, 4))))).sort((a, b) => b - a),
+    [presupuestos]
+  );
+
   const filtered = useMemo(
     () =>
       presupuestos.filter(
         (p) =>
-          p.numero.toLowerCase().includes(q.toLowerCase()) ||
-          clienteName(p.clienteId).toLowerCase().includes(q.toLowerCase())
+          (p.numero.toLowerCase().includes(q.toLowerCase()) ||
+            clienteName(p.clienteId).toLowerCase().includes(q.toLowerCase())) &&
+          matchPeriod(p.fecha, period)
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [presupuestos, q, clientes]
+    [presupuestos, q, clientes, period]
   );
 
   const tieneOrden = (presupuestoId: string) => ordenes.some((o) => o.presupuestoId === presupuestoId);
@@ -120,8 +128,9 @@ export default function PresupuestosPage() {
         )}
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput value={q} onChange={setQ} placeholder="Buscar por número o cliente…" />
+        <MonthYearFilter value={period} onChange={setPeriod} years={years} />
       </div>
 
       <DataTable

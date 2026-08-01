@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Guard } from "@/components/layout/Guard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
@@ -12,10 +13,12 @@ import type { EtapaKey } from "@/lib/types";
 
 interface Evento {
   date: string; // YYYY-MM-DD
+  ordenId: string;
   ordenNumero: string;
   etapa: EtapaKey;
   empleadoId: string | null;
   cliente: string;
+  destino: string;
 }
 
 const empTones: Tone[] = ["brand", "violet", "orange", "green", "robin", "red"];
@@ -24,12 +27,14 @@ const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "
 
 export default function AgendaPage() {
   const store = useStore();
-  const { ordenes, clientes, empleados, currentUser } = store;
+  const { ordenes, clientes, destinos, empleados, presupuestos, currentUser } = store;
   const isEmpleado = currentUser?.role === "empleado";
   const [colorBy, setColorBy] = useState<"etapa" | "empleado">("etapa");
   const [selDay, setSelDay] = useState<string | null>(null);
+  const [selEvent, setSelEvent] = useState<Evento | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
+  const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
   const empName = (id: string | null) => empleados.find((e) => e.id === id)?.nombre ?? "Sin asignar";
   const empTone = (id: string | null): Tone => {
     if (!id) return "gray";
@@ -43,7 +48,7 @@ export default function AgendaPage() {
       o.etapas.forEach((e) => {
         if (!e.fechaEstimada) return;
         if (isEmpleado && e.empleadoId !== currentUser?.empleadoId) return;
-        rows.push({ date: e.fechaEstimada, ordenNumero: o.numero, etapa: e.key, empleadoId: e.empleadoId, cliente: clienteName(o.clienteId) });
+        rows.push({ date: e.fechaEstimada, ordenId: o.id, ordenNumero: o.numero, etapa: e.key, empleadoId: e.empleadoId, cliente: clienteName(o.clienteId), destino: destinoName(o.destinoId) });
       });
     });
     return rows;
@@ -167,8 +172,9 @@ export default function AgendaPage() {
                       key={j}
                       className="truncate rounded px-1 py-0.5 text-[9px] font-medium sm:text-[10px]"
                       style={{ background: `${toneHex[tone(ev)]}22`, color: toneHex[tone(ev)] }}
+                      title={`${ev.cliente} · ${etapaLabels[ev.etapa]}`}
                     >
-                      {colorBy === "etapa" ? etapaLabels[ev.etapa] : ev.cliente}
+                      {ev.cliente}
                     </span>
                   ))}
                   {evs.length > 3 && <span className="px-1 text-[9px] text-content-subtle">+{evs.length - 3} más</span>}
@@ -185,16 +191,59 @@ export default function AgendaPage() {
           <h3 className="mb-3 font-display text-sm font-bold">Trabajos del {selDay.slice(8, 10)}/{selDay.slice(5, 7)}</h3>
           <div className="space-y-2">
             {selEvents.map((ev, i) => (
-              <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2">
+              <button
+                key={i}
+                onClick={() => setSelEvent(ev)}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2 text-left transition hover:border-brand/40"
+              >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{ev.cliente}</p>
                   <p className="text-xs text-content-subtle">{ev.ordenNumero} · {empName(ev.empleadoId)}</p>
                 </div>
                 <Badge tone={etapaTone[ev.etapa]} dot>{etapaLabels[ev.etapa]}</Badge>
-              </div>
+              </button>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Detalle del evento: cliente, servicios y empleado */}
+      {selEvent && (
+        <Modal
+          open
+          onClose={() => setSelEvent(null)}
+          title={selEvent.cliente}
+          subtitle={`${selEvent.ordenNumero} · ${selEvent.destino}`}
+        >
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={etapaTone[selEvent.etapa]} dot>{etapaLabels[selEvent.etapa]}</Badge>
+              <span className="text-sm text-content-muted">
+                <Icon name="empleados" size={14} className="mr-1 inline" />
+                {empName(selEvent.empleadoId)}
+              </span>
+            </div>
+
+            <div>
+              <p className="label">Servicios de esta orden</p>
+              {(() => {
+                const orden = ordenes.find((o) => o.id === selEvent.ordenId);
+                const pres = presupuestos.find((p) => p.id === orden?.presupuestoId);
+                if (!pres || pres.items.length === 0) return <p className="text-sm text-content-muted">Sin servicios cargados.</p>;
+                return (
+                  <div className="space-y-1.5">
+                    {pres.items.map((it, i) => (
+                      <div key={i} className="flex items-center justify-between rounded-lg border border-line bg-surface-base px-3 py-2 text-sm">
+                        <span>{it.nombre}</span>
+                        <span className="text-content-muted">x{it.cantidad}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </Modal>
       )}
     </Guard>
   );

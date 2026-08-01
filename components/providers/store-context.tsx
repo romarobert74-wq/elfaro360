@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type {
+  AppSettings,
   Cliente,
   Cobro,
   Costo,
@@ -38,6 +39,10 @@ export interface StoreValue {
   permissions: PermissionMatrix;
   setPermission: (role: Role, module: ModuleKey, field: "view" | "edit", value: boolean) => void;
   can: (module: ModuleKey, field?: "view" | "edit") => boolean;
+
+  // Configuración global
+  settings: AppSettings;
+  updateSettings: (s: AppSettings) => void;
 
   // Colecciones
   users: User[];

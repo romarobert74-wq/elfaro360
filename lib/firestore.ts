@@ -1,7 +1,7 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import { getFirebase } from "./firebase";
 import * as mock from "./mock-data";
-import type { PermissionMatrix } from "./types";
+import type { AppSettings, PermissionMatrix } from "./types";
 
 // Nombres de colecciones en Firestore (una por entidad).
 export const COLLECTIONS = {
@@ -20,6 +20,7 @@ export const COLLECTIONS = {
 export type CollectionName = keyof typeof COLLECTIONS;
 
 const META_DOC = { col: "meta", id: "permissions" };
+const SETTINGS_DOC = { col: "meta", id: "settings" };
 
 // ---------- Lectura ----------
 export async function fetchCollection<T>(name: CollectionName): Promise<T[]> {
@@ -34,6 +35,19 @@ export async function fetchPermissions(): Promise<PermissionMatrix | null> {
   if (!db) return null;
   const snap = await getDoc(doc(db, META_DOC.col, META_DOC.id));
   return snap.exists() ? (snap.data() as PermissionMatrix) : null;
+}
+
+export async function fetchSettings(): Promise<AppSettings | null> {
+  const { db } = getFirebase();
+  if (!db) return null;
+  const snap = await getDoc(doc(db, SETTINGS_DOC.col, SETTINGS_DOC.id));
+  return snap.exists() ? (snap.data() as AppSettings) : null;
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  const { db } = getFirebase();
+  if (!db) return;
+  await setDoc(doc(db, SETTINGS_DOC.col, SETTINGS_DOC.id), settings as unknown as Record<string, unknown>);
 }
 
 // ---------- Escritura ----------
@@ -86,4 +100,7 @@ export async function seedFirestore(onProgress?: (msg: string) => void): Promise
 
   await savePermissions(mock.permissionMatrix);
   onProgress?.("✓ permisos");
+
+  await saveSettings(mock.appSettings);
+  onProgress?.("✓ configuración");
 }

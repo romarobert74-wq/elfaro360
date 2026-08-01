@@ -51,6 +51,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const cobros = useCollection<Cobro>(mock.cobros);
 
   const [permissions, setPermissions] = useState<PermissionMatrix>(() => clone(mock.permissionMatrix));
+  const [settings, setSettings] = useState(() => clone(mock.appSettings));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Restaurar sesión (solo el usuario; los datos siempre parten del mock)
@@ -115,6 +116,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       permissions,
       setPermission,
       can,
+      settings,
+      updateSettings: setSettings,
       users: users.items,
       clientes: clientes.items,
       destinos: destinos.items,
@@ -136,7 +139,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
     }),
-    [currentUser, login, logout, setRole, permissions, setPermission, can,
+    [currentUser, login, logout, setRole, permissions, setPermission, can, settings,
       users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
   );
 

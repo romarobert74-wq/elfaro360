@@ -25,6 +25,7 @@ export const navItems: NavItem[] = [
   { key: "cobros", label: "Cobros", href: "/cobros", icon: "cobros", group: "Finanzas" },
   { key: "reportes", label: "Reportes", href: "/reportes", icon: "reportes", group: "Finanzas" },
 
+  { key: "configuracion", label: "Configuración", href: "/configuracion", icon: "config", group: "Sistema" },
   { key: "usuarios", label: "Usuarios y Roles", href: "/usuarios", icon: "usuarios", group: "Sistema" },
   { key: "permisos", label: "Permisos", href: "/configuracion/permisos", icon: "permisos", group: "Sistema" },
 ];

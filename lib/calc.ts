@@ -1,81 +1,93 @@
-import { servicios as catalogo, settings } from "./mock-data";
-import type { MetodoPago, PresupuestoConfig, PresupuestoItem } from "./types";
+import { appSettings } from "./mock-data";
+import type { AppSettings, MetodoPago, PresupuestoConfig, PresupuestoItem, ZonaTraslado } from "./types";
 
 export interface CalcResult {
-  serviciosTotal: number; // suma de items (servicios seleccionados)
-  manoObra: number;
-  estructura: number;
-  traslado: number;
-  garantia: number;
-  minimoSinMargen: number;
-  margen: number;
-  materialesFact: number;
-  recargoCuotas: number; // recargo por pago en 2 cuotas
+  // ---- Lo que ve/paga el cliente ----
+  serviciosTotal: number; // suma de precios finales de los servicios
+  traslado: number; // costo de la zona (o override)
+  recargoCuotas: number;
+  materialesFact: number; // serviciosTotal + extras
   subtotal: number;
   iva: number;
-  total: number;
+  total: number; // TOTAL que paga el cliente
+  // ---- Análisis interno (rentabilidad) ----
+  manoObra: number; // costo de los servicios (lo que pago a los chicos)
+  estructura: number;
+  garantia: number;
+  costoInterno: number; // manoObra + estructura + garantía
+  ganancia: number; // subtotal - costoInterno
+  gananciaPct: number;
+}
+
+/** Devuelve la zona de traslado que corresponde a una distancia en km. */
+export function zonaParaKm(km: number, zonas: ZonaTraslado[]): ZonaTraslado | null {
+  const orden = [...zonas].sort((a, b) => (a.kmHasta ?? Infinity) - (b.kmHasta ?? Infinity));
+  for (const z of orden) {
+    if (z.kmHasta == null || km <= z.kmHasta) return z;
+  }
+  return orden[orden.length - 1] ?? null;
 }
 
 /**
- * Motor de cálculo del presupuesto (idéntico criterio al panel de Kraken).
+ * Motor de cálculo del presupuesto.
  *
- *  baseCostos       = mano de obra + estructura + traslado
- *  garantía         = baseCostos * garantía%
- *  mínimo sin margen= baseCostos + garantía
- *  margen           = mínimo sin margen * margen%
- *  materiales fact. = Σ servicios seleccionados + materiales extra
- *  recargo cuotas   = (solo cuotas_2) 5% sobre el plan base (tour virtual)
- *  subtotal         = mínimo sin margen + margen + materiales fact. + recargo cuotas
- *  IVA              = subtotal * IVA%
- *  total            = subtotal + IVA
+ * CLIENTE (lo que ve en el PDF):
+ *   servicios (precio final) + traslado (zona) [+ recargo cuotas] = subtotal
+ *   IVA (si está activado) → total
+ *
+ * INTERNO (tu rentabilidad, panel lateral):
+ *   mano de obra (suma de COSTOS de los servicios, auto o manual)
+ *   + estructura (prorrateo de costos fijos)
+ *   + garantía (% de reserva)  = costo interno
+ *   ganancia = subtotal (sin IVA) − costo interno
  */
 export function computeQuote(
   items: PresupuestoItem[],
   config: PresupuestoConfig,
-  metodoPago: MetodoPago
+  metodoPago: MetodoPago,
+  settings: AppSettings = appSettings
 ): CalcResult {
-  const serviciosTotal = items.reduce(
-    (acc, it) => acc + it.cantidad * it.precioUnitario,
-    0
-  );
+  const serviciosTotal = items.reduce((a, it) => a + it.cantidad * it.precioUnitario, 0);
+  const costoServicios = items.reduce((a, it) => a + it.cantidad * (it.costoUnitario ?? 0), 0);
 
-  const manoObra = config.manoObra;
+  // Mano de obra automática (= costo de los servicios) con opción de override manual
+  const manoObra = config.manoObraOverride != null ? config.manoObraOverride : costoServicios;
   const estructura = config.estructura;
-  const traslado =
-    config.trasladoOverride != null ? config.trasladoOverride : config.trasladoAuto;
+  const traslado = config.trasladoOverride != null ? config.trasladoOverride : config.trasladoAuto;
 
-  const baseCostos = manoObra + estructura + traslado;
-  const garantia = round(baseCostos * (config.garantiaPct / 100));
-  const minimoSinMargen = baseCostos + garantia;
-  const margen = round(minimoSinMargen * (config.margenPct / 100));
-  const materialesFact = serviciosTotal + config.materialesFacturables;
-
+  // Recargo por pago en 2 cuotas (5% sobre el plan base / tour virtual)
   let recargoCuotas = 0;
   if (metodoPago === "cuotas_2") {
-    // 5% sobre el plan base (tour virtual mínimo de 5 panoramas)
-    const tourBase = catalogo.find((s) => s.id === "srv-1")?.precioBase ?? 0;
-    const tourEnItems = items.find((it) => it.servicioId === "srv-1");
-    const base = tourEnItems ? tourEnItems.precioUnitario : tourBase;
-    recargoCuotas = round(base * (settings.presupuesto.recargoCuotasPct / 100));
+    const tour = items.find((it) => it.servicioId === "srv-1");
+    const base = tour ? tour.precioUnitario : 0;
+    recargoCuotas = round(base * (settings.recargoCuotasPct / 100));
   }
 
-  const subtotal = minimoSinMargen + margen + materialesFact + recargoCuotas;
-  const iva = round(subtotal * (config.ivaPct / 100));
+  const materialesFact = serviciosTotal + config.materialesFacturables;
+  const subtotal = materialesFact + traslado + recargoCuotas;
+  const iva = config.conIva ? round(subtotal * (config.ivaPct / 100)) : 0;
   const total = subtotal + iva;
+
+  // Análisis interno
+  const garantia = round((manoObra + estructura) * (config.garantiaPct / 100));
+  const costoInterno = manoObra + estructura + garantia;
+  const ganancia = subtotal - costoInterno;
+  const gananciaPct = subtotal > 0 ? (ganancia / subtotal) * 100 : 0;
 
   return {
     serviciosTotal,
-    manoObra,
-    estructura,
     traslado,
-    garantia,
-    minimoSinMargen,
-    margen,
-    materialesFact,
     recargoCuotas,
+    materialesFact,
     subtotal,
     iva,
     total,
+    manoObra,
+    estructura,
+    garantia,
+    costoInterno,
+    ganancia,
+    gananciaPct,
   };
 }
 

@@ -14,7 +14,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
 import { verticalLabels, verticalTone } from "@/lib/labels";
-import { uid } from "@/lib/format";
+import { zonaParaKm } from "@/lib/calc";
+import { formatCurrency, uid } from "@/lib/format";
 import type { Destino, Vertical } from "@/lib/types";
 
 const empty: Omit<Destino, "id"> = {
@@ -40,7 +41,7 @@ const datoConfig: Record<Vertical, { key: keyof Destino["datos"]; label: string;
 };
 
 export default function DestinosPage() {
-  const { destinos, clientes, addDestino, updateDestino, removeDestino, can } = useStore();
+  const { destinos, clientes, settings, addDestino, updateDestino, removeDestino, can } = useStore();
   const editable = can("destinos", "edit");
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(false);
@@ -81,6 +82,13 @@ export default function DestinosPage() {
   };
 
   const datoActual = datoConfig[form.vertical];
+
+  const zonaHint = (() => {
+    const z = zonaParaKm(form.distanciaKm, settings.zonas);
+    if (!z) return "Se usa para calcular el traslado";
+    const costo = z.costo != null ? formatCurrency(z.costo) : "a consultar";
+    return `${z.nombre} · traslado al cliente ${costo} · pago al relevador ${formatCurrency(form.distanciaKm * settings.tarifaKmEmpleado)}`;
+  })();
 
   const datoResumen = (d: Destino) => {
     const cfg = datoConfig[d.vertical];
@@ -162,8 +170,29 @@ export default function DestinosPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Nombre del lugar *">
-            <TextInput value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                const c = clientes.find((x) => x.id === form.clienteId);
+                if (!c) return;
+                setForm({
+                  ...form,
+                  nombre: c.nombre,
+                  telefono: c.telefono,
+                  whatsapp: c.whatsapp,
+                  redes: { ...c.redes },
+                  web: c.web,
+                });
+              }}
+              className="btn-ghost w-full"
+              title="Copiar los datos del cliente al destino"
+            >
+              <Icon name="clientes" size={16} /> Ídem al cliente
+            </button>
+          </div>
+          <Field label="Nombre del lugar *" className="sm:col-span-2">
+            <TextInput value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej. Bodega Salentein (o tocá 'Ídem al cliente')" />
           </Field>
           <Field label="Dirección" className="sm:col-span-2">
             <TextInput value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
@@ -195,7 +224,7 @@ export default function DestinosPage() {
               <TextInput value={form.datos.extra ?? ""} onChange={(e) => setForm({ ...form, datos: { extra: e.target.value } })} />
             </Field>
           )}
-          <Field label="Distancia (km)" hint="Se usa para calcular el traslado">
+          <Field label="Distancia (km)" hint={zonaHint}>
             <TextInput type="number" min={0} value={form.distanciaKm} onChange={(e) => setForm({ ...form, distanciaKm: Number(e.target.value) })} />
           </Field>
           <Field label="Teléfono">

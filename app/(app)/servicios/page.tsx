@@ -21,6 +21,7 @@ const empty: Omit<Servicio, "id"> = {
   tipo: "tour_virtual",
   nombre: "",
   unidad: "servicio",
+  costo: 0,
   precioBase: 0,
 };
 
@@ -57,7 +58,19 @@ export default function ServiciosPage() {
     { key: "nombre", header: "Servicio", render: (s) => <span className="font-medium">{s.nombre}</span> },
     { key: "tipo", header: "Tipo", render: (s) => <Badge tone={tipoServicioTone[s.tipo]}>{tipoServicioLabels[s.tipo]}</Badge> },
     { key: "unidad", header: "Unidad", hideOnMobile: true, render: (s) => <span className="text-content-muted">{s.unidad}</span> },
-    { key: "precio", header: "Precio base", className: "text-right", render: (s) => <span className="font-medium tabular-nums">{formatCurrency(s.precioBase)}</span> },
+    { key: "costo", header: "Costo", hideOnMobile: true, className: "text-right", render: (s) => <span className="tabular-nums text-content-muted">{formatCurrency(s.costo)}</span> },
+    { key: "precio", header: "Precio final", className: "text-right", render: (s) => <span className="font-medium tabular-nums">{formatCurrency(s.precioBase)}</span> },
+    {
+      key: "margen",
+      header: "Margen",
+      hideOnMobile: true,
+      className: "text-right",
+      render: (s) => {
+        const m = s.precioBase - s.costo;
+        const pct = s.precioBase > 0 ? Math.round((m / s.precioBase) * 100) : 0;
+        return <span className="tabular-nums text-spectrum-green">{pct}%</span>;
+      },
+    },
     { key: "actions", header: "", className: "text-right w-24", render: (s) => <RowActions disabled={!editable} onEdit={() => openEdit(s)} onDelete={() => setToDelete(s)} /> },
   ];
 
@@ -116,7 +129,10 @@ export default function ServiciosPage() {
           <Field label="Unidad de medida">
             <TextInput value={form.unidad} onChange={(e) => setForm({ ...form, unidad: e.target.value })} placeholder="tour, pack, video…" />
           </Field>
-          <Field label="Precio base">
+          <Field label="Costo (lo que me cuesta)" hint="Lo que le pago a los chicos por hacerlo">
+            <TextInput type="number" min={0} value={form.costo} onChange={(e) => setForm({ ...form, costo: Number(e.target.value) })} />
+          </Field>
+          <Field label="Precio final (cliente)" hint="Lo que ve y paga el cliente">
             <TextInput type="number" min={0} value={form.precioBase} onChange={(e) => setForm({ ...form, precioBase: Number(e.target.value) })} />
           </Field>
         </div>

@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/Field";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MonthYearFilter, matchPeriod, type PeriodValue } from "@/components/ui/MonthYearFilter";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
+import { buildOrdenFromPresupuesto } from "@/lib/orders";
 import { formatDate } from "@/lib/format";
 import {
   estadoEtapaLabels,
@@ -23,22 +25,44 @@ import type { Etapa, EstadoEtapa, OrdenTrabajo } from "@/lib/types";
 
 export default function OrdenesPage() {
   const store = useStore();
-  const { ordenes, clientes, destinos, empleados, currentUser, updateOrden, can } = store;
+  const { ordenes, clientes, destinos, empleados, presupuestos, currentUser, updateOrden, addOrden, can } = store;
   const editable = can("ordenes", "edit");
   const isEmpleado = currentUser?.role === "empleado";
   const [open, setOpen] = useState<OrdenTrabajo | null>(null);
+  const [period, setPeriod] = useState<PeriodValue>({ year: null, month: null });
+  const [nuevaOpen, setNuevaOpen] = useState(false);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
   const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
   const empName = (id: string | null) => empleados.find((e) => e.id === id)?.nombre ?? null;
 
+  const years = useMemo(
+    () => Array.from(new Set(ordenes.map((o) => Number(o.fechaCreacion.slice(0, 4))))).sort((a, b) => b - a),
+    [ordenes]
+  );
+
+  // Presupuestos aprobados que todavía no tienen orden (para crear manual)
+  const presupuestosSinOrden = useMemo(
+    () => presupuestos.filter((p) => p.estado === "aprobado" && !ordenes.some((o) => o.presupuestoId === p.id)),
+    [presupuestos, ordenes]
+  );
+
+  const crearOrden = (presupuestoId: string) => {
+    const p = presupuestos.find((x) => x.id === presupuestoId);
+    if (!p) return;
+    const numero = `OT-2026-${String(ordenes.length + 1).padStart(3, "0")}`;
+    addOrden(buildOrdenFromPresupuesto(p, numero));
+    setNuevaOpen(false);
+  };
+
   // Empleado ve solo las órdenes donde tiene alguna etapa asignada
   const visibles = useMemo(() => {
+    let rows = ordenes;
     if (isEmpleado && currentUser?.empleadoId) {
-      return ordenes.filter((o) => o.etapas.some((e) => e.empleadoId === currentUser.empleadoId));
+      rows = rows.filter((o) => o.etapas.some((e) => e.empleadoId === currentUser.empleadoId));
     }
-    return ordenes;
-  }, [ordenes, isEmpleado, currentUser]);
+    return rows.filter((o) => matchPeriod(o.fechaCreacion, period));
+  }, [ordenes, isEmpleado, currentUser, period]);
 
   const progreso = (o: OrdenTrabajo) => {
     const done = o.etapas.filter((e) => e.estado === "completado").length;
@@ -47,10 +71,26 @@ export default function OrdenesPage() {
 
   return (
     <Guard module="ordenes">
-      <PageHeader title="Órdenes de Trabajo" subtitle="Pipeline de producción: Agendado → Filmación → Edición → Publicación → Entregado" />
+      <PageHeader
+        title="Órdenes de Trabajo"
+        subtitle="Pipeline: Aprobado → Relevamiento → Edición → Publicación → Entregable"
+        actions={
+          editable && (
+            <button className="btn-primary" onClick={() => setNuevaOpen(true)} disabled={presupuestosSinOrden.length === 0}>
+              <Icon name="plus" size={16} /> Nueva orden
+            </button>
+          )
+        }
+      />
+
+      {!isEmpleado && (
+        <div className="mb-4 flex items-center justify-end">
+          <MonthYearFilter value={period} onChange={setPeriod} years={years} />
+        </div>
+      )}
 
       {visibles.length === 0 ? (
-        <EmptyState icon="ordenes" title="Sin órdenes" description="Las órdenes se generan al aprobar un presupuesto." />
+        <EmptyState icon="ordenes" title="Sin órdenes" description="Las órdenes se generan al aprobar un presupuesto, o creá una manual desde 'Nueva orden'." />
       ) : (
         <div className="grid gap-4">
           {visibles.map((o) => (
@@ -119,6 +159,35 @@ export default function OrdenesPage() {
           onSave={(next) => { updateOrden(next); setOpen(next); }}
         />
       )}
+
+      <Modal
+        open={nuevaOpen}
+        onClose={() => setNuevaOpen(false)}
+        title="Nueva orden de trabajo"
+        subtitle="Se crea a partir de un presupuesto aprobado"
+      >
+        {presupuestosSinOrden.length === 0 ? (
+          <p className="text-sm text-content-muted">
+            No hay presupuestos aprobados sin orden. Aprobá un presupuesto en el módulo Presupuestos y su orden se genera sola (o elegilo acá).
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {presupuestosSinOrden.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => crearOrden(p.id)}
+                className="flex w-full items-center justify-between rounded-lg border border-line bg-surface-base px-4 py-3 text-left transition hover:border-brand/50"
+              >
+                <div>
+                  <p className="text-sm font-medium">{p.numero}</p>
+                  <p className="text-xs text-content-subtle">{clienteName(p.clienteId)} · {destinoName(p.destinoId)}</p>
+                </div>
+                <span className="text-brand"><Icon name="plus" size={16} /></span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
     </Guard>
   );
 }

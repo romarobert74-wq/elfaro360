@@ -44,7 +44,7 @@ export default function ReportesPage() {
     [aprobados]
   );
   const margenProyectado = useMemo(
-    () => aprobados.reduce((a, p) => a + computeQuote(p.items, p.config, p.metodoPago).margen, 0),
+    () => aprobados.reduce((a, p) => a + computeQuote(p.items, p.config, p.metodoPago).ganancia, 0),
     [aprobados]
   );
   const ingresoReal = useMemo(() => cobros.filter((c) => c.estado === "cobrado").reduce((a, c) => a + c.importe, 0), [cobros]);

@@ -137,27 +137,27 @@ export const estadoPresupuestoTone: Record<EstadoPresupuesto, Tone> = {
 
 // Pipeline de etapas — colores tipo "espectro del faro"
 export const etapaLabels: Record<EtapaKey, string> = {
-  agendado: "Agendado",
-  filmacion: "Filmación",
+  aprobado: "Aprobado",
+  relevamiento: "Relevamiento",
   edicion: "Edición",
   publicacion: "Publicación",
-  entregado: "Entregado",
+  entregable: "Entregable",
 };
 
 export const etapaOrder: EtapaKey[] = [
-  "agendado",
-  "filmacion",
+  "aprobado",
+  "relevamiento",
   "edicion",
   "publicacion",
-  "entregado",
+  "entregable",
 ];
 
 export const etapaTone: Record<EtapaKey, Tone> = {
-  agendado: "navy",
-  filmacion: "red",
+  aprobado: "navy",
+  relevamiento: "red",
   edicion: "yellow",
   publicacion: "violet",
-  entregado: "green",
+  entregable: "green",
 };
 
 export const estadoEtapaLabels: Record<EstadoEtapa, string> = {

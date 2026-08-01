@@ -15,6 +15,7 @@ export type ModuleKey =
   | "pagos"
   | "cobros"
   | "reportes"
+  | "configuracion"
   | "usuarios"
   | "permisos";
 
@@ -93,7 +94,8 @@ export interface Servicio {
   tipo: TipoServicio;
   nombre: string;
   unidad: string; // unidad de medida
-  precioBase: number;
+  costo: number; // lo que me cuesta / pago a los chicos por hacerlo
+  precioBase: number; // precio final que ve el cliente
 }
 
 // ===== Costos (fijos / variables de la empresa) =====
@@ -126,18 +128,21 @@ export interface PresupuestoItem {
   servicioId: string;
   nombre: string;
   cantidad: number;
-  precioUnitario: number;
+  precioUnitario: number; // precio final al cliente
+  costoUnitario: number; // costo interno (lo que pago a los chicos)
   autoAgregado?: boolean; // ej. pack por cheque
 }
 
 export interface PresupuestoConfig {
-  manoObra: number;
+  manoObra: number; // auto = suma de costos internos de los servicios (editable)
+  manoObraOverride: number | null; // si se edita a mano
   estructura: number;
-  trasladoAuto: number; // distancia_km * tarifaKm
+  trasladoAuto: number; // costo de la zona según distancia
   trasladoOverride: number | null;
   garantiaPct: number;
   margenPct: number;
   ivaPct: number;
+  conIva: boolean; // switch con/sin IVA
   materialesFacturables: number;
 }
 
@@ -156,11 +161,11 @@ export interface Presupuesto {
 
 // ===== Órdenes de trabajo =====
 export type EtapaKey =
-  | "agendado"
-  | "filmacion"
+  | "aprobado"
+  | "relevamiento"
   | "edicion"
   | "publicacion"
-  | "entregado";
+  | "entregable";
 
 export type EstadoEtapa = "pendiente" | "en_curso" | "completado";
 
@@ -197,7 +202,6 @@ export interface Empleado {
   puesto: Puesto;
   telefono: string;
   email: string;
-  tarifaDefault: number;
 }
 
 // ===== Pagos a empleados =====
@@ -211,6 +215,38 @@ export interface PagoEmpleado {
   monto: number;
   estado: EstadoPago;
   fecha: string | null; // fecha de pago
+}
+
+// ===== Configuración (settings editables) =====
+export interface ZonaTraslado {
+  id: string;
+  nombre: string;
+  kmHasta: number | null; // límite superior en km; null = "en adelante"
+  costo: number | null; // null = "a consultar" (se carga manual en el presupuesto)
+}
+
+export interface AppSettings {
+  empresa: {
+    nombre: string;
+    cuit: string;
+    email: string;
+    telefono: string;
+  };
+  // Finanzas / cálculo
+  dolarHoy: number; // valor del dólar del día (referencia)
+  diasLaborales: number; // días laborales al mes (para prorratear estructura)
+  tarifaKmEmpleado: number; // $/km que se paga a los chicos por traslado a relevamiento
+  garantiaPctDefault: number;
+  margenPctDefault: number;
+  ivaPctDefault: number;
+  conIvaDefault: boolean;
+  // Intereses por forma de pago
+  recargoChequePackId: string; // pack que se agrega al pagar con cheque
+  recargoCuotasPct: number; // interés por pago en 2 cuotas
+  // Numeración
+  numeroInicialPresupuesto: number;
+  // Zonas de traslado (lo que se le cobra al cliente por desplazamiento)
+  zonas: ZonaTraslado[];
 }
 
 // ===== Cobros =====

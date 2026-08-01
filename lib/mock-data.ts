@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   Cliente,
   Cobro,
   Costo,
@@ -18,24 +19,29 @@ import type {
 //  reemplaza por Firebase sin tocar la UI.
 // ============================================================
 
-// ---------- Settings globales de cálculo ----------
-export const settings = {
+// ---------- Configuración global (editable desde /configuracion) ----------
+export const appSettings: AppSettings = {
   empresa: {
     nombre: "El Faro 360",
     cuit: "30-71727272-3",
     email: "hola@elfaro360.com",
     telefono: "+54 9 261 555 0360",
   },
-  presupuesto: {
-    tarifaKm: 850, // $/km para traslado automático
-    manoObraDefault: 45000,
-    estructuraDefault: 18000,
-    garantiaPctDefault: 5,
-    margenPctDefault: 35,
-    ivaPctDefault: 21,
-    recargoCuotasPct: 5, // recargo por pago en 2 cuotas (solo destino_turistico)
-    packChequeServicioId: "srv-2", // Pack x3 panoramas que se agrega al elegir cheque
-  },
+  dolarHoy: 1350,
+  diasLaborales: 22,
+  tarifaKmEmpleado: 900, // $/km que se paga a los chicos por ir al relevamiento
+  garantiaPctDefault: 5,
+  margenPctDefault: 35,
+  ivaPctDefault: 21,
+  conIvaDefault: true,
+  recargoChequePackId: "srv-2", // Pack x3 panoramas que se agrega al elegir cheque
+  recargoCuotasPct: 5,
+  numeroInicialPresupuesto: 1,
+  zonas: [
+    { id: "z1", nombre: "Zona 1 (hasta 20 km)", kmHasta: 20, costo: 30000 },
+    { id: "z2", nombre: "Zona 2 (20 a 40 km)", kmHasta: 40, costo: 55000 },
+    { id: "z3", nombre: "Zona 3 (más de 40 km)", kmHasta: null, costo: null }, // a consultar
+  ],
 };
 
 // ---------- Usuarios del sistema ----------
@@ -88,6 +94,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: true },
     cobros: { view: true, edit: true },
     reportes: { view: true, edit: true },
+    configuracion: { view: true, edit: true },
     usuarios: { view: true, edit: true },
     permisos: { view: true, edit: true },
   },
@@ -104,6 +111,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: true },
     cobros: { view: true, edit: true },
     reportes: { view: true, edit: true },
+    configuracion: { view: true, edit: true },
     usuarios: { view: true, edit: false },
     permisos: { view: true, edit: false },
   },
@@ -120,6 +128,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: false },
     cobros: { view: false, edit: false },
     reportes: { view: false, edit: false },
+    configuracion: { view: false, edit: false },
     usuarios: { view: false, edit: false },
     permisos: { view: false, edit: false },
   },
@@ -235,77 +244,18 @@ export const destinos: Destino[] = [
 ];
 
 // ---------- Servicios (catálogo precargado) ----------
+// costo = lo que me cuesta (pago a los chicos) · precioBase = precio final al cliente
 export const servicios: Servicio[] = [
-  {
-    id: "srv-1",
-    tipo: "tour_virtual",
-    nombre: "Tour virtual (mínimo 5 panoramas)",
-    unidad: "tour",
-    precioBase: 65000,
-  },
-  {
-    id: "srv-2",
-    tipo: "adicional",
-    nombre: "Pack x3 panoramas adicional",
-    unidad: "pack",
-    precioBase: 24000,
-  },
-  {
-    id: "srv-3",
-    tipo: "adicional",
-    nombre: "Pack x5 panoramas adicional",
-    unidad: "pack",
-    precioBase: 36000,
-  },
-  {
-    id: "srv-4",
-    tipo: "adicional",
-    nombre: "Pack x10 panoramas adicional",
-    unidad: "pack",
-    precioBase: 64000,
-  },
-  {
-    id: "srv-5",
-    tipo: "video_reel",
-    nombre: "Video reel 60 seg",
-    unidad: "video",
-    precioBase: 55000,
-  },
-  {
-    id: "srv-6",
-    tipo: "video_reel",
-    nombre: "Video 360 1 min",
-    unidad: "video",
-    precioBase: 68000,
-  },
-  {
-    id: "srv-7",
-    tipo: "pack_fotos",
-    nombre: "Pack fotos x25",
-    unidad: "pack",
-    precioBase: 30000,
-  },
-  {
-    id: "srv-8",
-    tipo: "dron",
-    nombre: "Fotos/video aéreo con dron",
-    unidad: "servicio",
-    precioBase: 48000,
-  },
-  {
-    id: "srv-9",
-    tipo: "adicional",
-    nombre: "10 seg adicional video plano",
-    unidad: "adicional",
-    precioBase: 9000,
-  },
-  {
-    id: "srv-10",
-    tipo: "adicional",
-    nombre: "10 seg adicional video 360",
-    unidad: "adicional",
-    precioBase: 11000,
-  },
+  { id: "srv-1", tipo: "tour_virtual", nombre: "Tour virtual (mínimo 5 panoramas)", unidad: "tour", costo: 22000, precioBase: 65000 },
+  { id: "srv-2", tipo: "adicional", nombre: "Pack x3 panoramas adicional", unidad: "pack", costo: 8000, precioBase: 24000 },
+  { id: "srv-3", tipo: "adicional", nombre: "Pack x5 panoramas adicional", unidad: "pack", costo: 12000, precioBase: 36000 },
+  { id: "srv-4", tipo: "adicional", nombre: "Pack x10 panoramas adicional", unidad: "pack", costo: 22000, precioBase: 64000 },
+  { id: "srv-5", tipo: "video_reel", nombre: "Video reel 60 seg", unidad: "video", costo: 20000, precioBase: 55000 },
+  { id: "srv-6", tipo: "video_reel", nombre: "Video 360 1 min", unidad: "video", costo: 26000, precioBase: 68000 },
+  { id: "srv-7", tipo: "pack_fotos", nombre: "Pack fotos x25", unidad: "pack", costo: 11000, precioBase: 30000 },
+  { id: "srv-8", tipo: "dron", nombre: "Fotos/video aéreo con dron", unidad: "servicio", costo: 18000, precioBase: 48000 },
+  { id: "srv-9", tipo: "adicional", nombre: "10 seg adicional video plano", unidad: "adicional", costo: 3000, precioBase: 9000 },
+  { id: "srv-10", tipo: "adicional", nombre: "10 seg adicional video 360", unidad: "adicional", costo: 4000, precioBase: 11000 },
 ];
 
 // ---------- Costos fijos y variables ----------
@@ -354,38 +304,10 @@ export const costos: Costo[] = [
 
 // ---------- Empleados ----------
 export const empleados: Empleado[] = [
-  {
-    id: "emp-1",
-    nombre: "Diego Relevador",
-    puesto: "relevador",
-    telefono: "+54 9 261 555 6001",
-    email: "diego@elfaro360.com",
-    tarifaDefault: 22000,
-  },
-  {
-    id: "emp-2",
-    nombre: "Sofi Editora",
-    puesto: "editor_video",
-    telefono: "+54 9 261 555 6002",
-    email: "sofi@elfaro360.com",
-    tarifaDefault: 26000,
-  },
-  {
-    id: "emp-3",
-    nombre: "Martín Foto",
-    puesto: "editor_fotos",
-    telefono: "+54 9 261 555 6003",
-    email: "martin@elfaro360.com",
-    tarifaDefault: 20000,
-  },
-  {
-    id: "emp-4",
-    nombre: "Ana Dron",
-    puesto: "dron",
-    telefono: "+54 9 261 555 6004",
-    email: "ana@elfaro360.com",
-    tarifaDefault: 30000,
-  },
+  { id: "emp-1", nombre: "Diego Relevador", puesto: "relevador", telefono: "+54 9 261 555 6001", email: "diego@elfaro360.com" },
+  { id: "emp-2", nombre: "Sofi Editora", puesto: "editor_video", telefono: "+54 9 261 555 6002", email: "sofi@elfaro360.com" },
+  { id: "emp-3", nombre: "Martín Foto", puesto: "editor_fotos", telefono: "+54 9 261 555 6003", email: "martin@elfaro360.com" },
+  { id: "emp-4", nombre: "Ana Dron", puesto: "dron", telefono: "+54 9 261 555 6004", email: "ana@elfaro360.com" },
 ];
 
 // ---------- Presupuestos ----------
@@ -397,19 +319,21 @@ export const presupuestos: Presupuesto[] = [
     destinoId: "des-2",
     fecha: "2026-07-10",
     items: [
-      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000 },
-      { servicioId: "srv-5", nombre: "Video reel 60 seg", cantidad: 1, precioUnitario: 55000 },
-      { servicioId: "srv-8", nombre: "Fotos/video aéreo con dron", cantidad: 1, precioUnitario: 48000 },
+      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000, costoUnitario: 22000 },
+      { servicioId: "srv-5", nombre: "Video reel 60 seg", cantidad: 1, precioUnitario: 55000, costoUnitario: 20000 },
+      { servicioId: "srv-8", nombre: "Fotos/video aéreo con dron", cantidad: 1, precioUnitario: 48000, costoUnitario: 18000 },
     ],
     metodoPago: "transferencia",
     config: {
-      manoObra: 45000,
+      manoObra: 60000,
+      manoObraOverride: null,
       estructura: 18000,
-      trasladoAuto: 42 * 850,
+      trasladoAuto: 55000,
       trasladoOverride: null,
       garantiaPct: 5,
       margenPct: 35,
       ivaPct: 21,
+      conIva: true,
       materialesFacturables: 0,
     },
     estado: "aprobado",
@@ -422,18 +346,20 @@ export const presupuestos: Presupuesto[] = [
     destinoId: "des-1",
     fecha: "2026-07-22",
     items: [
-      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000 },
-      { servicioId: "srv-7", nombre: "Pack fotos x25", cantidad: 1, precioUnitario: 30000 },
+      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000, costoUnitario: 22000 },
+      { servicioId: "srv-7", nombre: "Pack fotos x25", cantidad: 1, precioUnitario: 30000, costoUnitario: 11000 },
     ],
     metodoPago: "efectivo",
     config: {
-      manoObra: 45000,
+      manoObra: 33000,
+      manoObraOverride: null,
       estructura: 18000,
-      trasladoAuto: 8 * 850,
+      trasladoAuto: 30000,
       trasladoOverride: null,
       garantiaPct: 5,
       margenPct: 35,
       ivaPct: 21,
+      conIva: true,
       materialesFacturables: 0,
     },
     estado: "enviado",
@@ -446,19 +372,21 @@ export const presupuestos: Presupuesto[] = [
     destinoId: "des-3",
     fecha: "2026-07-28",
     items: [
-      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000 },
-      { servicioId: "srv-4", nombre: "Pack x10 panoramas adicional", cantidad: 1, precioUnitario: 64000 },
-      { servicioId: "srv-6", nombre: "Video 360 1 min", cantidad: 1, precioUnitario: 68000 },
+      { servicioId: "srv-1", nombre: "Tour virtual (mínimo 5 panoramas)", cantidad: 1, precioUnitario: 65000, costoUnitario: 22000 },
+      { servicioId: "srv-4", nombre: "Pack x10 panoramas adicional", cantidad: 1, precioUnitario: 64000, costoUnitario: 22000 },
+      { servicioId: "srv-6", nombre: "Video 360 1 min", cantidad: 1, precioUnitario: 68000, costoUnitario: 26000 },
     ],
     metodoPago: "cuotas_2",
     config: {
-      manoObra: 45000,
+      manoObra: 70000,
+      manoObraOverride: null,
       estructura: 18000,
-      trasladoAuto: 105 * 850,
-      trasladoOverride: null,
+      trasladoAuto: 0,
+      trasladoOverride: 90000,
       garantiaPct: 5,
       margenPct: 35,
       ivaPct: 21,
+      conIva: true,
       materialesFacturables: 0,
     },
     estado: "borrador",
@@ -476,11 +404,11 @@ export const ordenes: OrdenTrabajo[] = [
     destinoId: "des-2",
     fechaCreacion: "2026-07-12",
     etapas: [
-      { key: "agendado", empleadoId: "emp-1", fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
-      { key: "filmacion", empleadoId: "emp-1", fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
+      { key: "aprobado", empleadoId: "emp-1", fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
+      { key: "relevamiento", empleadoId: "emp-1", fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
       { key: "edicion", empleadoId: "emp-2", fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
       { key: "publicacion", empleadoId: "emp-2", fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "entregado", empleadoId: null, fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "entregable", empleadoId: null, fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
   {
@@ -491,21 +419,21 @@ export const ordenes: OrdenTrabajo[] = [
     destinoId: "des-1",
     fechaCreacion: "2026-07-24",
     etapas: [
-      { key: "agendado", empleadoId: "emp-1", fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
-      { key: "filmacion", empleadoId: "emp-1", fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "aprobado", empleadoId: "emp-1", fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
+      { key: "relevamiento", empleadoId: "emp-1", fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
       { key: "edicion", empleadoId: "emp-3", fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
       { key: "publicacion", empleadoId: "emp-2", fechaEstimada: "2026-08-14", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "entregado", empleadoId: null, fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "entregable", empleadoId: null, fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
 ];
 
 // ---------- Pagos a empleados ----------
 export const pagosEmpleados: PagoEmpleado[] = [
-  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapa: "agendado", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
-  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapa: "filmacion", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
+  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapa: "aprobado", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
+  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapa: "relevamiento", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
   { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapa: "edicion", monto: 26000, estado: "pendiente", fecha: null },
-  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapa: "agendado", monto: 8000, estado: "pendiente", fecha: null },
+  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapa: "aprobado", monto: 8000, estado: "pendiente", fecha: null },
   { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapa: "edicion", monto: 20000, estado: "pendiente", fecha: null },
 ];
 

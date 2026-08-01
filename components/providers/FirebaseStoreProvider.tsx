@@ -7,7 +7,9 @@ import {
   deleteDocById,
   fetchCollection,
   fetchPermissions,
+  fetchSettings,
   savePermissions,
+  saveSettings,
   upsertDoc,
   type CollectionName,
 } from "@/lib/firestore";
@@ -64,14 +66,20 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
   const cobros = useFsCollection<Cobro>("cobros");
 
   const [permissions, setPermissions] = useState<PermissionMatrix>(() => clone(mock.permissionMatrix));
+  const [settings, setSettingsState] = useState(() => clone(mock.appSettings));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const updateSettings = useCallback((s: typeof settings) => {
+    setSettingsState(s);
+    void saveSettings(s).catch((e) => console.error("[settings] save", e));
+  }, []);
 
   // Carga inicial desde Firestore
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [u, cl, de, se, co, pr, or, em, pa, cb, perms] = await Promise.all([
+      const [u, cl, de, se, co, pr, or, em, pa, cb, perms, sett] = await Promise.all([
         fetchCollection<User>("users"),
         fetchCollection<Cliente>("clientes"),
         fetchCollection<Destino>("destinos"),
@@ -83,6 +91,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
         fetchCollection<PagoEmpleado>("pagosEmpleados"),
         fetchCollection<Cobro>("cobros"),
         fetchPermissions(),
+        fetchSettings(),
       ]);
       if (!alive) return;
       users.setItems(u);
@@ -96,6 +105,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       pagos.setItems(pa);
       cobros.setItems(cb);
       if (perms) setPermissions(perms);
+      if (sett) setSettingsState(sett);
 
       // Restaurar sesión
       const id = window.localStorage.getItem("elfaro-user");
@@ -166,6 +176,8 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       permissions,
       setPermission,
       can,
+      settings,
+      updateSettings,
       users: users.items,
       clientes: clientes.items,
       destinos: destinos.items,
@@ -187,7 +199,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
     }),
-    [loading, currentUser, login, logout, setRole, permissions, setPermission, can,
+    [loading, currentUser, login, logout, setRole, permissions, setPermission, can, settings, updateSettings,
       users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
   );
 
