@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/ui/Modal";
-import { LogoMark } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/Icon";
 import { computeQuote } from "@/lib/calc";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -47,14 +47,9 @@ export function VistaCliente({
       <div className="print-area rounded-xl bg-white p-8 text-[#050505]">
         {/* Encabezado */}
         <div className="mb-6 flex items-start justify-between border-b border-neutral-200 pb-5">
-          <div className="flex items-center gap-3">
-            <LogoMark size={44} />
-            <div>
-              <p className="font-display text-xl font-bold leading-none">
-                EL FARO <span className="text-[#007FFF]">360</span>
-              </p>
-              <p className="mt-1 text-xs text-neutral-500">Virtualización de espacios en 360°</p>
-            </div>
+          <div className="text-[#050505]">
+            <Logo variant="horizontal" size="md" />
+            <p className="mt-1.5 text-xs text-neutral-500">Virtualización de espacios en 360°</p>
           </div>
           <div className="text-right text-xs text-neutral-500">
             <p className="font-display text-base font-bold text-[#050505]">Presupuesto</p>

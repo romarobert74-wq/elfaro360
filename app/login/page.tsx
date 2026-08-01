@@ -37,8 +37,8 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <Logo size="lg" />
-          <p className="mt-3 text-sm text-content-muted">
+          <Logo variant="stacked" size="lg" />
+          <p className="mt-4 text-sm text-content-muted">
             Virtualización de espacios en 360° · Panel de gestión
           </p>
           <div className="faro-line mt-5 w-40" />
