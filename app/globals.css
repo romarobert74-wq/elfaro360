@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ===== Modo oscuro (default) ===== */
+  :root,
+  .dark {
+    --surface-base: 5 5 5; /* #050505 Negro */
+    --surface-raised: 18 20 24; /* paneles */
+    --surface-overlay: 26 29 35; /* modales / dropdowns */
+    --line: 40 44 52;
+    --content: 248 248 255; /* Ghost White */
+    --content-muted: 165 172 185;
+    --content-subtle: 110 118 130;
+  }
+
+  /* ===== Modo claro ===== */
+  .light {
+    --surface-base: 248 248 255; /* Ghost White */
+    --surface-raised: 255 255 255;
+    --surface-overlay: 255 255 255;
+    --line: 224 227 234;
+    --content: 5 5 5;
+    --content-muted: 90 96 108;
+    --content-subtle: 140 146 158;
+  }
+
+  * {
+    border-color: rgb(var(--line));
+  }
+
+  body {
+    background-color: rgb(var(--surface-base));
+    color: rgb(var(--content));
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgba(0, 127, 255, 0.3);
+  }
+
+  /* Scrollbar sutil */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--line));
+    border-radius: 8px;
+    border: 2px solid rgb(var(--surface-base));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--content-subtle));
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface-raised;
+  }
+
+  .input-base {
+    @apply w-full rounded-lg border border-line bg-surface-base px-3 py-2 text-sm text-content
+      placeholder:text-content-subtle outline-none transition
+      focus:border-brand focus:ring-2 focus:ring-brand/30;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+      transition-all disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn text-white shadow-glow-sm;
+    background-image: linear-gradient(135deg, #007fff 0%, #0066cc 100%);
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(135deg, #1a8cff 0%, #007fff 100%);
+  }
+
+  .btn-ghost {
+    @apply btn border border-line bg-transparent text-content hover:bg-surface-overlay;
+  }
+
+  .btn-danger {
+    @apply btn border border-spectrum-red/40 bg-spectrum-red/10 text-spectrum-red
+      hover:bg-spectrum-red/20;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-content-muted;
+  }
+
+  /* Barra espectral del faro (acento de marca) */
+  .faro-line {
+    @apply h-1 w-full rounded-full bg-faro-beam;
+  }
+}
+
+/* ===== Print (Vista Cliente del presupuesto) ===== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,133 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Guard } from "@/components/layout/Guard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { DataTable, type Column } from "@/components/ui/DataTable";
+import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { Field, TextInput, Select } from "@/components/ui/Field";
+import { RowActions } from "@/components/ui/RowActions";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/Icon";
+import { useStore } from "@/components/providers/StoreProvider";
+import { tipoServicioLabels, tipoServicioTone } from "@/lib/labels";
+import { formatCurrency, uid } from "@/lib/format";
+import type { Servicio, TipoServicio } from "@/lib/types";
+
+const empty: Omit<Servicio, "id"> = {
+  tipo: "tour_virtual",
+  nombre: "",
+  unidad: "servicio",
+  precioBase: 0,
+};
+
+export default function ServiciosPage() {
+  const { servicios, addServicio, updateServicio, removeServicio, can } = useStore();
+  const editable = can("servicios", "edit");
+  const [q, setQ] = useState("");
+  const [tipoFilter, setTipoFilter] = useState<TipoServicio | "todos">("todos");
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Servicio | null>(null);
+  const [form, setForm] = useState<Omit<Servicio, "id">>(empty);
+  const [toDelete, setToDelete] = useState<Servicio | null>(null);
+
+  const filtered = useMemo(
+    () =>
+      servicios.filter(
+        (s) =>
+          s.nombre.toLowerCase().includes(q.toLowerCase()) &&
+          (tipoFilter === "todos" || s.tipo === tipoFilter)
+      ),
+    [servicios, q, tipoFilter]
+  );
+
+  const openNew = () => { setEditing(null); setForm(empty); setModal(true); };
+  const openEdit = (s: Servicio) => { setEditing(s); const { id, ...rest } = s; setForm(rest); setModal(true); };
+  const save = () => {
+    if (!form.nombre.trim()) return;
+    if (editing) updateServicio({ ...form, id: editing.id });
+    else addServicio({ ...form, id: uid("srv") });
+    setModal(false);
+  };
+
+  const columns: Column<Servicio>[] = [
+    { key: "nombre", header: "Servicio", render: (s) => <span className="font-medium">{s.nombre}</span> },
+    { key: "tipo", header: "Tipo", render: (s) => <Badge tone={tipoServicioTone[s.tipo]}>{tipoServicioLabels[s.tipo]}</Badge> },
+    { key: "unidad", header: "Unidad", hideOnMobile: true, render: (s) => <span className="text-content-muted">{s.unidad}</span> },
+    { key: "precio", header: "Precio base", className: "text-right", render: (s) => <span className="font-medium tabular-nums">{formatCurrency(s.precioBase)}</span> },
+    { key: "actions", header: "", className: "text-right w-24", render: (s) => <RowActions disabled={!editable} onEdit={() => openEdit(s)} onDelete={() => setToDelete(s)} /> },
+  ];
+
+  return (
+    <Guard module="servicios">
+      <PageHeader
+        title="Servicios"
+        subtitle="Catálogo de servicios y precios base"
+        actions={editable && (
+          <button className="btn-primary" onClick={openNew}><Icon name="plus" size={16} /> Nuevo servicio</button>
+        )}
+      />
+
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar servicio…" />
+        <Select value={tipoFilter} onChange={(e) => setTipoFilter(e.target.value as TipoServicio | "todos")} className="sm:w-52">
+          <option value="todos">Todos los tipos</option>
+          <option value="tour_virtual">Tour virtual</option>
+          <option value="video_reel">Video / Reel</option>
+          <option value="pack_fotos">Pack fotos</option>
+          <option value="dron">Dron</option>
+          <option value="adicional">Adicional</option>
+        </Select>
+      </div>
+
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        empty={<EmptyState icon="servicios" title="Sin servicios" description="No hay servicios que coincidan." />}
+      />
+
+      <Modal
+        open={modal}
+        onClose={() => setModal(false)}
+        title={editing ? "Editar servicio" : "Nuevo servicio"}
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setModal(false)}>Cancelar</button>
+            <button className="btn-primary" onClick={save}>Guardar</button>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nombre *" className="sm:col-span-2">
+            <TextInput value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej. Tour virtual (mínimo 5 panoramas)" />
+          </Field>
+          <Field label="Tipo">
+            <Select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoServicio })}>
+              <option value="tour_virtual">Tour virtual</option>
+              <option value="video_reel">Video / Reel</option>
+              <option value="pack_fotos">Pack fotos</option>
+              <option value="dron">Dron</option>
+              <option value="adicional">Adicional</option>
+            </Select>
+          </Field>
+          <Field label="Unidad de medida">
+            <TextInput value={form.unidad} onChange={(e) => setForm({ ...form, unidad: e.target.value })} placeholder="tour, pack, video…" />
+          </Field>
+          <Field label="Precio base">
+            <TextInput type="number" min={0} value={form.precioBase} onChange={(e) => setForm({ ...form, precioBase: Number(e.target.value) })} />
+          </Field>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        onConfirm={() => toDelete && removeServicio(toDelete.id)}
+        message={`¿Eliminar el servicio "${toDelete?.nombre}"?`}
+      />
+    </Guard>
+  );
+}
