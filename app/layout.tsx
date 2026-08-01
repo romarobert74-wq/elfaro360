@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { StoreProvider } from "@/components/providers/StoreProvider";
+import { AppStoreProvider } from "@/components/providers/AppStoreProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <StoreProvider>{children}</StoreProvider>
+          <AppStoreProvider>{children}</AppStoreProvider>
         </ThemeProvider>
       </body>
     </html>

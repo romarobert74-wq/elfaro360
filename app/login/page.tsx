@@ -17,7 +17,7 @@ const roleTone: Record<Role, "violet" | "brand" | "green" | "gray"> = {
 };
 
 export default function LoginPage() {
-  const { users, currentUser, login } = useStore();
+  const { users, currentUser, login, loading } = useStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -52,6 +52,16 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="divide-y divide-line">
+            {loading && (
+              <div className="flex items-center justify-center py-10">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-brand" />
+              </div>
+            )}
+            {!loading && users.length === 0 && (
+              <p className="px-5 py-8 text-center text-sm text-content-muted">
+                No hay usuarios cargados. Si estás en modo Firebase, ejecutá el seed inicial.
+              </p>
+            )}
             {users.map((u) => (
               <button
                 key={u.id}

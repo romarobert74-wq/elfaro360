@@ -9,22 +9,22 @@ import { MobileDrawer } from "./MobileDrawer";
 import { useStore } from "@/components/providers/StoreProvider";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { currentUser } = useStore();
+  const { currentUser, loading } = useStore();
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Esperamos a que StoreProvider restaure la sesión desde localStorage
+    // Esperamos a que el store restaure la sesión desde localStorage
     const t = setTimeout(() => setReady(true), 0);
     return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    if (ready && !currentUser) router.replace("/login");
-  }, [ready, currentUser, router]);
+    if (ready && !loading && !currentUser) router.replace("/login");
+  }, [ready, loading, currentUser, router]);
 
-  if (!currentUser) {
+  if (loading || !currentUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ink">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-brand" />

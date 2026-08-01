@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import * as mock from "@/lib/mock-data";
+import { StoreCtx, useStore, type StoreValue } from "./store-context";
 import type {
   Cliente,
   Cobro,
@@ -25,49 +19,13 @@ import type {
   User,
 } from "@/lib/types";
 
+// Re-export para no romper los imports existentes (`@/components/providers/StoreProvider`)
+export { useStore };
+
 // Clona los arrays mock para poder mutarlos en memoria sin tocar la fuente
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x));
 }
-
-interface StoreValue {
-  // Auth
-  currentUser: User | null;
-  login: (userId: string) => void;
-  logout: () => void;
-  setRole: (role: Role) => void; // switcher rápido de rol (demo)
-
-  // Permisos
-  permissions: PermissionMatrix;
-  setPermission: (role: Role, module: ModuleKey, field: "view" | "edit", value: boolean) => void;
-  can: (module: ModuleKey, field?: "view" | "edit") => boolean;
-
-  // Colecciones
-  users: User[];
-  clientes: Cliente[];
-  destinos: Destino[];
-  servicios: Servicio[];
-  costos: Costo[];
-  presupuestos: Presupuesto[];
-  ordenes: OrdenTrabajo[];
-  empleados: Empleado[];
-  pagosEmpleados: PagoEmpleado[];
-  cobros: Cobro[];
-
-  // CRUD genérico por colección
-  addUser: (x: User) => void; updateUser: (x: User) => void; removeUser: (id: string) => void;
-  addCliente: (x: Cliente) => void; updateCliente: (x: Cliente) => void; removeCliente: (id: string) => void;
-  addDestino: (x: Destino) => void; updateDestino: (x: Destino) => void; removeDestino: (id: string) => void;
-  addServicio: (x: Servicio) => void; updateServicio: (x: Servicio) => void; removeServicio: (id: string) => void;
-  addCosto: (x: Costo) => void; updateCosto: (x: Costo) => void; removeCosto: (id: string) => void;
-  addPresupuesto: (x: Presupuesto) => void; updatePresupuesto: (x: Presupuesto) => void; removePresupuesto: (id: string) => void;
-  addOrden: (x: OrdenTrabajo) => void; updateOrden: (x: OrdenTrabajo) => void; removeOrden: (id: string) => void;
-  addEmpleado: (x: Empleado) => void; updateEmpleado: (x: Empleado) => void; removeEmpleado: (id: string) => void;
-  addPago: (x: PagoEmpleado) => void; updatePago: (x: PagoEmpleado) => void; removePago: (id: string) => void;
-  addCobro: (x: Cobro) => void; updateCobro: (x: Cobro) => void; removeCobro: (id: string) => void;
-}
-
-const Ctx = createContext<StoreValue | null>(null);
 
 function useCollection<T extends { id: string }>(initial: T[]) {
   const [items, setItems] = useState<T[]>(() => clone(initial));
@@ -148,6 +106,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value: StoreValue = useMemo(
     () => ({
+      loading: false,
+      backend: "mock" as const,
       currentUser,
       login,
       logout,
@@ -180,11 +140,5 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
   );
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-export function useStore() {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useStore must be used within StoreProvider");
-  return ctx;
+  return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
