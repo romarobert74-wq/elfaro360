@@ -15,7 +15,8 @@ const roles: Role[] = ["super_admin", "admin", "empleado"];
 
 export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { theme, toggle } = useTheme();
-  const { currentUser, setRole, logout } = useStore();
+  const { currentUser, setRole, logout, backend } = useStore();
+  const showRoleSwitcher = backend === "mock";
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
@@ -42,8 +43,8 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Switcher de rol (demo) */}
-        <div className="hidden items-center gap-1.5 rounded-lg border border-line bg-surface-raised px-2 py-1.5 sm:flex">
+        {/* Switcher de rol (solo demo/mock) */}
+        <div className={`${showRoleSwitcher ? "hidden sm:flex" : "hidden"} items-center gap-1.5 rounded-lg border border-line bg-surface-raised px-2 py-1.5`}>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-content-subtle">
             Rol demo
           </span>
@@ -98,7 +99,7 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                     {roleLabels[currentUser.role]}
                   </Badge>
                 </div>
-                <div className="p-1.5 sm:hidden">
+                <div className={`p-1.5 ${showRoleSwitcher ? "sm:hidden" : "hidden"}`}>
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-content-subtle">
                     Rol demo
                   </p>

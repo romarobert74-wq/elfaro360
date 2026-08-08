@@ -1,8 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  type User as FirebaseUser,
+} from "firebase/auth";
 import { StoreCtx, useStore, type StoreValue } from "./store-context";
 import * as mock from "@/lib/mock-data";
+import { getFirebase } from "@/lib/firebase";
 import {
   deleteDocById,
   fetchCollection,
@@ -68,7 +77,11 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
   const [permissions, setPermissions] = useState<PermissionMatrix>(() => clone(mock.permissionMatrix));
   const [settings, setSettingsState] = useState(() => clone(mock.appSettings));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const loading = !authReady || !dataReady;
 
   const updateSettings = useCallback((s: typeof settings) => {
     setSettingsState(s);
@@ -106,17 +119,10 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       cobros.setItems(cb);
       if (perms) setPermissions(perms);
       if (sett) setSettingsState(sett);
-
-      // Restaurar sesión
-      const id = window.localStorage.getItem("elfaro-user");
-      if (id) {
-        const found = u.find((x) => x.id === id);
-        if (found) setCurrentUser(found);
-      }
-      setLoading(false);
+      setDataReady(true);
     })().catch((e) => {
       console.error("[firebase] carga inicial", e);
-      setLoading(false);
+      setDataReady(true);
     });
     return () => {
       alive = false;
@@ -124,17 +130,66 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = useCallback((userId: string) => {
-    const u = users.items.find((x) => x.id === userId) ?? null;
-    if (u) {
-      setCurrentUser(u);
-      window.localStorage.setItem("elfaro-user", u.id);
+  // Escuchar el estado de autenticación (Firebase Auth)
+  useEffect(() => {
+    const { auth } = getFirebase();
+    if (!auth) {
+      setAuthReady(true);
+      return;
     }
-  }, [users.items]);
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      setAuthUser(fbUser);
+      setAuthReady(true);
+    });
+    return () => unsub();
+  }, []);
+
+  // Mapear el usuario autenticado -> ficha en la colección `users` (por email)
+  useEffect(() => {
+    if (!authReady || !dataReady) return;
+    if (!authUser) {
+      setCurrentUser(null);
+      return;
+    }
+    const email = (authUser.email ?? "").toLowerCase();
+    const found = users.items.find((u) => u.email.toLowerCase() === email && u.activo);
+    if (found) {
+      setCurrentUser(found);
+      setAuthError(null);
+    } else if (users.items.length === 0) {
+      // Bootstrap: base vacía → el primer usuario autenticado entra como super_admin
+      // para poder correr el seed inicial (/configuracion/seed).
+      setCurrentUser({ id: "bootstrap", nombre: authUser.displayName || email, email, role: "super_admin", activo: true });
+      setAuthError(null);
+    } else {
+      setCurrentUser(null);
+      setAuthError("Tu cuenta no está autorizada en El Faro 360. Pedile a un administrador que te dé de alta.");
+    }
+  }, [authUser, authReady, dataReady, users.items]);
+
+  const login = useCallback((_userId: string) => {
+    // Demo (modo mock). En Firebase se usa loginWithEmail / loginWithGoogle.
+  }, []);
+
+  const loginWithEmail = useCallback(async (email: string, password: string) => {
+    const { auth } = getFirebase();
+    if (!auth) throw new Error("Firebase no está configurado.");
+    setAuthError(null);
+    await signInWithEmailAndPassword(auth, email, password);
+  }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    const { auth } = getFirebase();
+    if (!auth) throw new Error("Firebase no está configurado.");
+    setAuthError(null);
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  }, []);
 
   const logout = useCallback(() => {
+    const { auth } = getFirebase();
     setCurrentUser(null);
-    window.localStorage.removeItem("elfaro-user");
+    setAuthError(null);
+    if (auth) void signOut(auth);
   }, []);
 
   const setRole = useCallback((role: Role) => {
@@ -171,8 +226,11 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       backend: "firebase" as const,
       currentUser,
       login,
+      loginWithEmail,
+      loginWithGoogle,
       logout,
       setRole,
+      authError,
       permissions,
       setPermission,
       can,
@@ -199,7 +257,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
     }),
-    [loading, currentUser, login, logout, setRole, permissions, setPermission, can, settings, updateSettings,
+    [loading, currentUser, login, loginWithEmail, loginWithGoogle, logout, setRole, authError, permissions, setPermission, can, settings, updateSettings,
       users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
   );
 

@@ -2,27 +2,38 @@ rules_version = '2';
 
 // ============================================================
 //  Reglas de seguridad de Firestore — El Faro 360
-//  ⚠️ FASE 2 (punto de partida). Cuando integres Firebase Auth
-//  real, ajustá estas reglas para validar request.auth y roles.
+//
+//  Modelo: SOLO usuarios autenticados (Firebase Auth) pueden leer
+//  o escribir. El público NO tiene ningún acceso. Como las cuentas
+//  las creás vos (super admin), únicamente tu equipo entra.
+//
+//  Los roles (super_admin / admin / empleado) se aplican en la UI.
+//  Para endurecer aún más por rol a nivel base de datos, ver el
+//  bloque comentado al final.
 // ============================================================
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- MODO DEMO (Fase 1 → 2) ---
-    // Permite lectura/escritura para poder correr el seed y la app
-    // mientras todavía no hay Firebase Auth. Cambialo antes de producción.
-    match /{document=**} {
-      allow read, write: if true;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // --- EJEMPLO PARA PRODUCCIÓN (activar cuando haya Auth) ---
-    // function signedIn() { return request.auth != null; }
+    // Datos del negocio: requieren estar logueado.
+    match /{document=**} {
+      allow read, write: if signedIn();
+    }
+
+    // ---- HARDENING OPCIONAL (por rol) ----
+    // Requiere guardar el rol en un doc por UID: /roles/{uid} = { role: "..." }
+    // y mantenerlo desde el panel. Ejemplo:
+    //
     // function role() {
-    //   return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    //   return get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role;
     // }
-    // match /{col}/{doc} {
-    //   allow read:  if signedIn();
-    //   allow write: if signedIn() && role() in ['super_admin', 'admin'];
-    // }
+    // function isAdmin() { return role() in ['super_admin', 'admin']; }
+    //
+    // match /users/{id}      { allow read: if signedIn(); allow write: if role() == 'super_admin'; }
+    // match /meta/{id}       { allow read: if signedIn(); allow write: if isAdmin(); }
+    // match /{col}/{id}      { allow read: if signedIn(); allow write: if isAdmin(); }
   }
 }

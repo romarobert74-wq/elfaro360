@@ -26,7 +26,7 @@ export default function SeedPage() {
     setLogs([]);
     setDone(false);
     try {
-      await seedFirestore((msg) => setLogs((l) => [...l, msg]));
+      await seedFirestore((msg) => setLogs((l) => [...l, msg]), currentUser?.email);
       setLogs((l) => [...l, "— Migración completada —"]);
       setDone(true);
     } catch (e) {

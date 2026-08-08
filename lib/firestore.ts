@@ -1,7 +1,8 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import { getFirebase } from "./firebase";
 import * as mock from "./mock-data";
-import type { AppSettings, PermissionMatrix } from "./types";
+import { uid } from "./format";
+import type { AppSettings, PermissionMatrix, User } from "./types";
 
 // Nombres de colecciones en Firestore (una por entidad).
 export const COLLECTIONS = {
@@ -74,7 +75,7 @@ export async function savePermissions(matrix: PermissionMatrix): Promise<void> {
  * Sube los datos mock a Firestore. Idempotente (usa el mismo id).
  * Se ejecuta una sola vez desde /configuracion/seed (solo super_admin).
  */
-export async function seedFirestore(onProgress?: (msg: string) => void): Promise<void> {
+export async function seedFirestore(onProgress?: (msg: string) => void, adminEmail?: string): Promise<void> {
   const { db } = getFirebase();
   if (!db) throw new Error("Firebase no está configurado.");
 
@@ -96,6 +97,13 @@ export async function seedFirestore(onProgress?: (msg: string) => void): Promise
       await setDoc(doc(db, COLLECTIONS[name], item.id), item as Record<string, unknown>);
     }
     onProgress?.(`✓ ${name} (${data[name].length})`);
+  }
+
+  // Asegurar que TU cuenta quede como super_admin (por si usaste tu propio email)
+  if (adminEmail && !mock.users.some((u) => u.email.toLowerCase() === adminEmail.toLowerCase())) {
+    const adminUser: User = { id: uid("usr"), nombre: adminEmail, email: adminEmail, role: "super_admin", activo: true };
+    await setDoc(doc(db, COLLECTIONS.users, adminUser.id), adminUser as unknown as Record<string, unknown>);
+    onProgress?.("✓ tu usuario admin");
   }
 
   await savePermissions(mock.permissionMatrix);

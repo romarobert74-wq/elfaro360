@@ -31,9 +31,12 @@ export interface StoreValue {
 
   // Auth
   currentUser: User | null;
-  login: (userId: string) => void;
+  login: (userId: string) => void; // demo (modo mock): elegir usuario
+  loginWithEmail: (email: string, password: string) => Promise<void>; // Firebase Auth
+  loginWithGoogle: () => Promise<void>; // Firebase Auth
   logout: () => void;
   setRole: (role: Role) => void;
+  authError: string | null; // ej. "cuenta no autorizada"
 
   // Permisos
   permissions: PermissionMatrix;
