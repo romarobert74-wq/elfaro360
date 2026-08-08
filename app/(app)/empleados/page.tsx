@@ -6,29 +6,30 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Field, TextInput, Select } from "@/components/ui/Field";
+import { Field, TextInput } from "@/components/ui/Field";
+import { CatalogSelect } from "@/components/ui/CatalogSelect";
 import { RowActions } from "@/components/ui/RowActions";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
-import { puestoLabels } from "@/lib/labels";
-import { uid } from "@/lib/format";
-import type { Empleado, Puesto } from "@/lib/types";
-
-const puestoTone: Record<Puesto, "brand" | "violet" | "green" | "orange" | "navy"> = {
-  relevador: "brand",
-  editor_video: "violet",
-  editor_fotos: "green",
-  dron: "orange",
-  administrativo: "navy",
-};
+import { catalogLabel, toneForValue } from "@/lib/labels";
+import { slug, uid } from "@/lib/format";
+import type { Empleado } from "@/lib/types";
 
 const empty: Omit<Empleado, "id"> = { nombre: "", puesto: "relevador", telefono: "", email: "" };
 
 export default function EmpleadosPage() {
-  const { empleados, addEmpleado, updateEmpleado, removeEmpleado, can } = useStore();
+  const { empleados, settings, updateSettings, addEmpleado, updateEmpleado, removeEmpleado, can } = useStore();
   const editable = can("empleados", "edit");
+  const puestos = settings.catalogos.puestos;
+  const crearPuesto = (label: string) => {
+    const value = slug(label);
+    if (!puestos.some((p) => p.value === value)) {
+      updateSettings({ ...settings, catalogos: { ...settings.catalogos, puestos: [...puestos, { value, label }] } });
+    }
+    return value;
+  };
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Empleado | null>(null);
   const [form, setForm] = useState<Omit<Empleado, "id">>(empty);
@@ -59,8 +60,8 @@ export default function EmpleadosPage() {
         </div>
       ),
     },
-    { key: "puesto", header: "Puesto", render: (e) => <Badge tone={puestoTone[e.puesto]}>{puestoLabels[e.puesto]}</Badge> },
-    { key: "tel", header: "Teléfono", hideOnMobile: true, render: (e) => <span className="text-content-muted">{e.telefono || "—"}</span> },
+    { key: "puesto", header: "Puesto", sortValue: (e) => catalogLabel(puestos, e.puesto), render: (e) => <Badge tone={toneForValue(e.puesto)}>{catalogLabel(puestos, e.puesto)}</Badge> },
+    { key: "tel", header: "WhatsApp / Tel.", hideOnMobile: true, render: (e) => <span className="text-content-muted">{e.telefono || "—"}</span> },
     { key: "email", header: "Email", hideOnMobile: true, render: (e) => <span className="text-content-muted">{e.email || "—"}</span> },
     { key: "actions", header: "", className: "text-right w-24", render: (e) => <RowActions disabled={!editable} onEdit={() => openEdit(e)} onDelete={() => setToDelete(e)} /> },
   ];
@@ -94,17 +95,11 @@ export default function EmpleadosPage() {
           <Field label="Nombre *" className="sm:col-span-2">
             <TextInput value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
           </Field>
-          <Field label="Puesto">
-            <Select value={form.puesto} onChange={(e) => setForm({ ...form, puesto: e.target.value as Puesto })}>
-              <option value="relevador">Relevador</option>
-              <option value="editor_fotos">Editor de fotos</option>
-              <option value="editor_video">Editor de video</option>
-              <option value="dron">Piloto de dron</option>
-              <option value="administrativo">Administrativo</option>
-            </Select>
+          <Field label="Puesto" hint="Podés crear puestos nuevos con el +">
+            <CatalogSelect items={puestos} value={form.puesto} onChange={(v) => setForm({ ...form, puesto: v })} onCreate={crearPuesto} />
           </Field>
-          <Field label="Teléfono">
-            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
+          <Field label="WhatsApp / Teléfono">
+            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="+54 9 261 …" />
           </Field>
           <Field label="Email">
             <TextInput type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />

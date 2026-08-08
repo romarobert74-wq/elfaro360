@@ -4,13 +4,10 @@ import type {
   EstadoPago,
   EstadoPresupuesto,
   EtapaKey,
+  EtapaPago,
   MetodoPago,
-  Puesto,
   Role,
-  TipoCliente,
   TipoCosto,
-  TipoServicio,
-  Vertical,
 } from "./types";
 
 // Un "tono" mapea a clases utilitarias de badge (bg + text + border)
@@ -57,61 +54,23 @@ export const roleLabels: Record<Role, string> = {
   cliente: "Cliente",
 };
 
-export const tipoClienteLabels: Record<TipoCliente, string> = {
-  inmobiliaria: "Inmobiliaria",
-  destino_turistico: "Destino turístico",
-  otros: "Otros",
-};
+// ===== Catálogos dinámicos =====
+// Devuelve la etiqueta legible de un value dentro de un catálogo (o el value).
+export function catalogLabel(list: { value: string; label: string }[] | undefined, value: string): string {
+  return list?.find((x) => x.value === value)?.label ?? value;
+}
 
-export const tipoClienteTone: Record<TipoCliente, Tone> = {
-  inmobiliaria: "navy",
-  destino_turistico: "robin",
-  otros: "gray",
-};
-
-export const verticalLabels: Record<Vertical, string> = {
-  real_estate: "Real Estate",
-  bodega: "Bodega",
-  hotel: "Hotel",
-  restaurante: "Restaurante",
-  otro: "Otro",
-};
-
-export const verticalTone: Record<Vertical, Tone> = {
-  real_estate: "brand",
-  bodega: "violet",
-  hotel: "navy",
-  restaurante: "orange",
-  otro: "gray",
-};
-
-export const tipoServicioLabels: Record<TipoServicio, string> = {
-  tour_virtual: "Tour virtual",
-  video_reel: "Video / Reel",
-  pack_fotos: "Pack fotos",
-  dron: "Dron",
-  adicional: "Adicional",
-};
-
-export const tipoServicioTone: Record<TipoServicio, Tone> = {
-  tour_virtual: "brand",
-  video_reel: "violet",
-  pack_fotos: "green",
-  dron: "orange",
-  adicional: "gray",
-};
+// Asigna un tono estable a cualquier value (para que los tipos custom tengan color).
+const tonePalette: Tone[] = ["brand", "violet", "navy", "orange", "green", "robin", "red", "yellow"];
+export function toneForValue(value: string): Tone {
+  let h = 0;
+  for (let i = 0; i < value.length; i++) h = (h * 31 + value.charCodeAt(i)) >>> 0;
+  return tonePalette[h % tonePalette.length];
+}
 
 export const tipoCostoLabels: Record<TipoCosto, string> = {
   fijo: "Fijo",
   variable: "Variable",
-};
-
-export const puestoLabels: Record<Puesto, string> = {
-  editor_fotos: "Editor de fotos",
-  editor_video: "Editor de video",
-  relevador: "Relevador",
-  administrativo: "Administrativo",
-  dron: "Piloto de dron",
 };
 
 export const metodoPagoLabels: Record<MetodoPago, string> = {
@@ -159,6 +118,14 @@ export const etapaTone: Record<EtapaKey, Tone> = {
   publicacion: "violet",
   entregable: "green",
 };
+
+// Etapa para pagos (incluye "otros")
+export function etapaPagoLabel(e: EtapaPago): string {
+  return e === "otros" ? "Otros" : etapaLabels[e];
+}
+export function etapaPagoTone(e: EtapaPago): Tone {
+  return e === "otros" ? "gray" : etapaTone[e];
+}
 
 export const estadoEtapaLabels: Record<EstadoEtapa, string> = {
   pendiente: "Pendiente",

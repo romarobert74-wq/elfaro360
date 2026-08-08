@@ -11,7 +11,7 @@ import { MonthYearFilter, matchPeriod, type PeriodValue } from "@/components/ui/
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
-import { buildOrdenFromPresupuesto } from "@/lib/orders";
+import { buildOrdenBlank, buildOrdenFromPresupuesto } from "@/lib/orders";
 import { formatDate } from "@/lib/format";
 import {
   estadoEtapaLabels,
@@ -31,6 +31,8 @@ export default function OrdenesPage() {
   const [open, setOpen] = useState<OrdenTrabajo | null>(null);
   const [period, setPeriod] = useState<PeriodValue>({ year: null, month: null });
   const [nuevaOpen, setNuevaOpen] = useState(false);
+  const [nvCliente, setNvCliente] = useState("");
+  const [nvDestino, setNvDestino] = useState("");
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
   const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
@@ -47,11 +49,23 @@ export default function OrdenesPage() {
     [presupuestos, ordenes]
   );
 
-  const crearOrden = (presupuestoId: string) => {
+  const nextNumero = () => `OT-2026-${String(ordenes.length + 1).padStart(3, "0")}`;
+
+  const crearDesdePresupuesto = (presupuestoId: string) => {
     const p = presupuestos.find((x) => x.id === presupuestoId);
     if (!p) return;
-    const numero = `OT-2026-${String(ordenes.length + 1).padStart(3, "0")}`;
-    addOrden(buildOrdenFromPresupuesto(p, numero));
+    addOrden(buildOrdenFromPresupuesto(p, nextNumero()));
+    setNuevaOpen(false);
+  };
+
+  const abrirNueva = () => {
+    setNvCliente(clientes[0]?.id ?? "");
+    setNvDestino("");
+    setNuevaOpen(true);
+  };
+  const crearEnBlanco = () => {
+    if (!nvCliente || !nvDestino) return;
+    addOrden(buildOrdenBlank(nvCliente, nvDestino, nextNumero()));
     setNuevaOpen(false);
   };
 
@@ -76,7 +90,7 @@ export default function OrdenesPage() {
         subtitle="Pipeline: Aprobado → Relevamiento → Edición → Publicación → Entregable"
         actions={
           editable && (
-            <button className="btn-primary" onClick={() => setNuevaOpen(true)} disabled={presupuestosSinOrden.length === 0}>
+            <button className="btn-primary" onClick={abrirNueva} disabled={clientes.length === 0}>
               <Icon name="plus" size={16} /> Nueva orden
             </button>
           )
@@ -164,29 +178,58 @@ export default function OrdenesPage() {
         open={nuevaOpen}
         onClose={() => setNuevaOpen(false)}
         title="Nueva orden de trabajo"
-        subtitle="Se crea a partir de un presupuesto aprobado"
+        footer={
+          <>
+            <button className="btn-ghost" onClick={() => setNuevaOpen(false)}>Cancelar</button>
+            <button className="btn-primary" onClick={crearEnBlanco} disabled={!nvCliente || !nvDestino}>
+              <Icon name="check" size={16} /> Crear orden
+            </button>
+          </>
+        }
       >
-        {presupuestosSinOrden.length === 0 ? (
-          <p className="text-sm text-content-muted">
-            No hay presupuestos aprobados sin orden. Aprobá un presupuesto en el módulo Presupuestos y su orden se genera sola (o elegilo acá).
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {presupuestosSinOrden.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => crearOrden(p.id)}
-                className="flex w-full items-center justify-between rounded-lg border border-line bg-surface-base px-4 py-3 text-left transition hover:border-brand/50"
-              >
-                <div>
-                  <p className="text-sm font-medium">{p.numero}</p>
-                  <p className="text-xs text-content-subtle">{clienteName(p.clienteId)} · {destinoName(p.destinoId)}</p>
-                </div>
-                <span className="text-brand"><Icon name="plus" size={16} /></span>
-              </button>
-            ))}
+        <div className="space-y-5">
+          {/* Opción A: en blanco */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Cliente *">
+              <Select value={nvCliente} onChange={(e) => { setNvCliente(e.target.value); setNvDestino(""); }}>
+                <option value="">Seleccionar…</option>
+                {clientes.map((c) => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
+              </Select>
+            </Field>
+            <Field label="Destino *">
+              <Select value={nvDestino} onChange={(e) => setNvDestino(e.target.value)} disabled={!nvCliente}>
+                <option value="">Seleccionar…</option>
+                {destinos.filter((d) => d.clienteId === nvCliente).map((d) => (<option key={d.id} value={d.id}>{d.nombre}</option>))}
+              </Select>
+            </Field>
           </div>
-        )}
+
+          {/* Opción B: desde presupuesto aprobado */}
+          {presupuestosSinOrden.length > 0 && (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <div className="h-px flex-1 bg-line" />
+                <span className="text-xs text-content-subtle">o desde un presupuesto aprobado</span>
+                <div className="h-px flex-1 bg-line" />
+              </div>
+              <div className="space-y-2">
+                {presupuestosSinOrden.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => crearDesdePresupuesto(p.id)}
+                    className="flex w-full items-center justify-between rounded-lg border border-line bg-surface-base px-4 py-3 text-left transition hover:border-brand/50"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{p.numero}</p>
+                      <p className="text-xs text-content-subtle">{clienteName(p.clienteId)} · {destinoName(p.destinoId)}</p>
+                    </div>
+                    <span className="text-brand"><Icon name="plus" size={16} /></span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
     </Guard>
   );

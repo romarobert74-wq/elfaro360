@@ -185,26 +185,31 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* Detalle del día seleccionado */}
-      {selDay && selEvents.length > 0 && (
-        <div className="card mt-4 p-5">
-          <h3 className="mb-3 font-display text-sm font-bold">Trabajos del {selDay.slice(8, 10)}/{selDay.slice(5, 7)}</h3>
+      {/* Detalle del día seleccionado (modal directo) */}
+      {selDay && (
+        <Modal
+          open
+          onClose={() => setSelDay(null)}
+          title={`Trabajos del ${selDay.slice(8, 10)}/${selDay.slice(5, 7)}`}
+          subtitle={`${selEvents.length} etapa(s) · tocá una para ver la orden`}
+        >
           <div className="space-y-2">
+            {selEvents.length === 0 && <p className="text-sm text-content-muted">No hay trabajos este día.</p>}
             {selEvents.map((ev, i) => (
               <button
                 key={i}
                 onClick={() => setSelEvent(ev)}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2 text-left transition hover:border-brand/40"
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2.5 text-left transition hover:border-brand/40"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{ev.cliente}</p>
-                  <p className="text-xs text-content-subtle">{ev.ordenNumero} · {empName(ev.empleadoId)}</p>
+                  <p className="text-xs text-content-subtle">{ev.ordenNumero} · {ev.destino} · {empName(ev.empleadoId)}</p>
                 </div>
                 <Badge tone={etapaTone[ev.etapa]} dot>{etapaLabels[ev.etapa]}</Badge>
               </button>
             ))}
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Detalle del evento: cliente, servicios y empleado */}

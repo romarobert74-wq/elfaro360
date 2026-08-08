@@ -37,7 +37,8 @@ export interface User {
 }
 
 // ===== Clientes =====
-export type TipoCliente = "inmobiliaria" | "destino_turistico" | "otros";
+// Los tipos son dinámicos (se administran en Configuración). Guardamos el "value".
+export type TipoCliente = string;
 
 export interface RedesSociales {
   instagram?: string;
@@ -50,15 +51,21 @@ export interface Cliente {
   nombre: string;
   razonSocial: string;
   tipoCliente: TipoCliente;
-  telefono: string;
-  whatsapp: string;
+  telefono: string; // WhatsApp / teléfono (unificado)
   redes: RedesSociales;
   web: string;
   notas: string;
 }
 
 // ===== Destinos =====
-export type Vertical = "real_estate" | "bodega" | "hotel" | "restaurante" | "otro";
+export type Vertical = string; // dinámico (Configuración)
+
+// Campo flexible: el usuario agrega lo que quiera (m² cubiertos, terreno, etc.)
+export interface DestinoCampo {
+  id: string;
+  label: string;
+  value: string;
+}
 
 export interface Destino {
   id: string;
@@ -66,28 +73,15 @@ export interface Destino {
   nombre: string;
   direccion: string;
   distanciaKm: number;
-  telefono: string;
-  whatsapp: string;
+  telefono: string; // WhatsApp / teléfono (unificado)
   redes: RedesSociales;
   web: string;
   vertical: Vertical;
-  // Datos específicos flexibles según vertical
-  datos: {
-    m2?: number; // real_estate
-    habitaciones?: number; // hotel
-    hectareas?: number; // bodega
-    mesas?: number; // restaurante
-    extra?: string;
-  };
+  campos: DestinoCampo[]; // datos flexibles
 }
 
 // ===== Servicios (catálogo) =====
-export type TipoServicio =
-  | "tour_virtual"
-  | "video_reel"
-  | "pack_fotos"
-  | "dron"
-  | "adicional";
+export type TipoServicio = string; // dinámico (Configuración)
 
 export interface Servicio {
   id: string;
@@ -189,12 +183,7 @@ export interface OrdenTrabajo {
 }
 
 // ===== Empleados =====
-export type Puesto =
-  | "editor_fotos"
-  | "editor_video"
-  | "relevador"
-  | "administrativo"
-  | "dron";
+export type Puesto = string; // dinámico (Configuración)
 
 export interface Empleado {
   id: string;
@@ -207,11 +196,13 @@ export interface Empleado {
 // ===== Pagos a empleados =====
 export type EstadoPago = "pendiente" | "pagado";
 
+export type EtapaPago = EtapaKey | "otros";
+
 export interface PagoEmpleado {
   id: string;
   empleadoId: string;
-  ordenId: string;
-  etapa: EtapaKey;
+  ordenId: string; // orden asociada (su presupuesto se muestra como referencia)
+  etapa: EtapaPago;
   monto: number;
   estado: EstadoPago;
   fecha: string | null; // fecha de pago
@@ -225,12 +216,27 @@ export interface ZonaTraslado {
   costo: number | null; // null = "a consultar" (se carga manual en el presupuesto)
 }
 
+export interface CatalogoItem {
+  value: string;
+  label: string;
+}
+export interface CatalogoTipoCliente extends CatalogoItem {
+  permiteCuotas: boolean; // habilita "pago en 2 cuotas" en el presupuesto
+}
+
 export interface AppSettings {
   empresa: {
     nombre: string;
     cuit: string;
     email: string;
     telefono: string;
+  };
+  // Catálogos dinámicos (se editan en Configuración)
+  catalogos: {
+    tiposCliente: CatalogoTipoCliente[];
+    verticales: CatalogoItem[];
+    tiposServicio: CatalogoItem[];
+    puestos: CatalogoItem[];
   };
   // Finanzas / cálculo
   dolarHoy: number; // valor del dólar del día (referencia)

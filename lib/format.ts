@@ -34,3 +34,12 @@ export function formatDateShort(iso: string | null | undefined): string {
 export function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+export function slug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "") || `item_${Math.random().toString(36).slice(2, 6)}`;
+}

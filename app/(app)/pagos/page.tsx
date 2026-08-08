@@ -13,18 +13,25 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
-import { estadoPagoLabels, estadoPagoTone, etapaLabels, etapaOrder } from "@/lib/labels";
+import { estadoPagoLabels, estadoPagoTone, etapaOrder, etapaPagoLabel } from "@/lib/labels";
 import { formatCurrency, formatDate, uid } from "@/lib/format";
-import type { EtapaKey, PagoEmpleado } from "@/lib/types";
+import type { EtapaPago, PagoEmpleado } from "@/lib/types";
 
 export default function PagosPage() {
   const store = useStore();
-  const { pagosEmpleados, empleados, ordenes, currentUser, addPago, updatePago, removePago, can } = store;
+  const { pagosEmpleados, empleados, ordenes, presupuestos, clientes, currentUser, addPago, updatePago, removePago, can } = store;
   const editable = can("pagos", "edit");
   const isEmpleado = currentUser?.role === "empleado";
 
   const empName = (id: string) => empleados.find((e) => e.id === id)?.nombre ?? "—";
-  const ordenNum = (id: string) => ordenes.find((o) => o.id === id)?.numero ?? "—";
+  const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
+  // Nombre del presupuesto asociado a una orden
+  const presupuestoDeOrden = (ordenId: string) => {
+    const o = ordenes.find((x) => x.id === ordenId);
+    if (!o) return "—";
+    const pres = presupuestos.find((p) => p.id === o.presupuestoId);
+    return `${pres?.numero ?? o.numero} · ${clienteName(o.clienteId)}`;
+  };
 
   const [filtroEmp, setFiltroEmp] = useState<string>("todos");
   const [modal, setModal] = useState(false);
@@ -67,8 +74,8 @@ export default function PagosPage() {
 
   const columns: Column<PagoEmpleado>[] = [
     { key: "emp", header: "Empleado", render: (p) => <span className="font-medium">{empName(p.empleadoId)}</span> },
-    { key: "orden", header: "Orden", hideOnMobile: true, render: (p) => <span className="text-content-muted">{ordenNum(p.ordenId)}</span> },
-    { key: "etapa", header: "Etapa", render: (p) => <span className="text-content-muted">{etapaLabels[p.etapa]}</span> },
+    { key: "presupuesto", header: "Presupuesto", hideOnMobile: true, render: (p) => <span className="text-content-muted">{presupuestoDeOrden(p.ordenId)}</span> },
+    { key: "etapa", header: "Etapa", render: (p) => <span className="text-content-muted">{etapaPagoLabel(p.etapa)}</span> },
     { key: "monto", header: "Monto", className: "text-right", render: (p) => <span className="font-medium tabular-nums">{formatCurrency(p.monto)}</span> },
     {
       key: "estado",
@@ -135,14 +142,15 @@ export default function PagosPage() {
               {empleados.map((e) => (<option key={e.id} value={e.id}>{e.nombre}</option>))}
             </Select>
           </Field>
-          <Field label="Orden de trabajo">
+          <Field label="Presupuesto">
             <Select value={form.ordenId} onChange={(e) => setForm({ ...form, ordenId: e.target.value })}>
-              {ordenes.map((o) => (<option key={o.id} value={o.id}>{o.numero}</option>))}
+              {ordenes.map((o) => (<option key={o.id} value={o.id}>{presupuestoDeOrden(o.id)}</option>))}
             </Select>
           </Field>
           <Field label="Etapa">
-            <Select value={form.etapa} onChange={(e) => setForm({ ...form, etapa: e.target.value as EtapaKey })}>
-              {etapaOrder.map((k) => (<option key={k} value={k}>{etapaLabels[k]}</option>))}
+            <Select value={form.etapa} onChange={(e) => setForm({ ...form, etapa: e.target.value as EtapaPago })}>
+              {etapaOrder.map((k) => (<option key={k} value={k}>{etapaPagoLabel(k)}</option>))}
+              <option value="otros">Otros</option>
             </Select>
           </Field>
           <Field label="Monto">

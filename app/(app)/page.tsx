@@ -10,58 +10,56 @@ import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
 import { computeQuote } from "@/lib/calc";
 import { formatCurrency, formatDate } from "@/lib/format";
-import {
-  estadoPresupuestoLabels,
-  estadoPresupuestoTone,
-  etapaLabels,
-  etapaTone,
-} from "@/lib/labels";
+import { etapaLabels, etapaTone } from "@/lib/labels";
 import type { EtapaKey } from "@/lib/types";
 
 export default function DashboardPage() {
   const store = useStore();
-  const { currentUser, presupuestos, ordenes, clientes, destinos, cobros, empleados } = store;
+  const { currentUser, presupuestos, ordenes, clientes, cobros, costos, pagosEmpleados, empleados, settings } = store;
   const isEmpleado = currentUser?.role === "empleado";
   const myEmpId = currentUser?.empleadoId;
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
-  const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
   const empName = (id: string | null) => empleados.find((e) => e.id === id)?.nombre ?? "Sin asignar";
 
-  const facturacionMes = useMemo(
-    () => cobros.filter((c) => c.estado === "cobrado").reduce((a, c) => a + c.importe, 0),
-    [cobros]
-  );
+  // ---- Métricas del negocio ----
+  const m = useMemo(() => {
+    const aprobados = presupuestos.filter((p) => p.estado === "aprobado");
+    const calcTotal = (p: (typeof presupuestos)[number]) => computeQuote(p.items, p.config, p.metodoPago, settings);
 
-  const pendientes = useMemo(
-    () => presupuestos.filter((p) => p.estado === "enviado" || p.estado === "borrador"),
-    [presupuestos]
-  );
-  const pendientesValor = useMemo(
-    () => pendientes.reduce((a, p) => a + computeQuote(p.items, p.config, p.metodoPago).total, 0),
-    [pendientes]
-  );
+    const ingresoReal = cobros.filter((c) => c.estado === "cobrado").reduce((a, c) => a + c.importe, 0);
+    const porCobrar = cobros.filter((c) => c.estado === "pendiente").reduce((a, c) => a + c.importe, 0);
+    const facturadoProyectado = aprobados.reduce((a, p) => a + calcTotal(p).total, 0);
 
-  const ordenesEnCurso = useMemo(
-    () => ordenes.filter((o) => o.etapas.some((e) => e.estado !== "completado")),
-    [ordenes]
-  );
+    const costosMensuales = costos.reduce(
+      (a, c) => a + c.precio * c.cantidad * (c.frecuencia === "anual" ? 1 / 12 : 1),
+      0
+    );
+    const gastosPagados = pagosEmpleados.filter((p) => p.estado === "pagado").reduce((a, p) => a + p.monto, 0);
+    const gastosPendientes = pagosEmpleados.filter((p) => p.estado === "pendiente").reduce((a, p) => a + p.monto, 0);
+    const gananciaReal = ingresoReal - gastosPagados;
 
-  // Próximas etapas agendadas (todas, o solo las del empleado logueado)
+    const presupEnviados = presupuestos.filter((p) => p.estado === "enviado").length;
+    const presupAprobados = aprobados.length;
+    const presupBorradores = presupuestos.filter((p) => p.estado === "borrador").length;
+
+    const ordenesEjecucion = ordenes.filter((o) => o.etapas.some((e) => e.estado !== "completado")).length;
+    const ordenesFinalizadas = ordenes.filter((o) => o.etapas.every((e) => e.estado === "completado")).length;
+
+    return {
+      ingresoReal, porCobrar, facturadoProyectado, costosMensuales, gastosPagados, gastosPendientes,
+      gananciaReal, presupEnviados, presupAprobados, presupBorradores, ordenesEjecucion, ordenesFinalizadas,
+    };
+  }, [presupuestos, ordenes, cobros, costos, pagosEmpleados, settings]);
+
+  // Próximas etapas (empleado: solo las suyas)
   const proximas = useMemo(() => {
-    const rows: { ordenId: string; numero: string; etapa: EtapaKey; fecha: string; empleadoId: string | null; cliente: string }[] = [];
+    const rows: { numero: string; etapa: EtapaKey; fecha: string; empleadoId: string | null; cliente: string }[] = [];
     ordenes.forEach((o) => {
       o.etapas.forEach((e) => {
         if (e.estado !== "completado" && e.fechaEstimada) {
           if (isEmpleado && e.empleadoId !== myEmpId) return;
-          rows.push({
-            ordenId: o.id,
-            numero: o.numero,
-            etapa: e.key,
-            fecha: e.fechaEstimada,
-            empleadoId: e.empleadoId,
-            cliente: clienteName(o.clienteId),
-          });
+          rows.push({ numero: o.numero, etapa: e.key, fecha: e.fechaEstimada, empleadoId: e.empleadoId, cliente: clienteName(o.clienteId) });
         }
       });
     });
@@ -69,84 +67,84 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenes, isEmpleado, myEmpId]);
 
+  // ---- Vista empleado (reducida) ----
+  if (isEmpleado) {
+    const misPendientes = pagosEmpleados.filter((p) => p.empleadoId === myEmpId && p.estado === "pendiente").reduce((a, p) => a + p.monto, 0);
+    return (
+      <Guard module="dashboard">
+        <PageHeader title={`Hola, ${currentUser?.nombre.split(" ")[0]} 👋`} subtitle="Tu resumen" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard label="Mis pagos pendientes" value={formatCurrency(misPendientes)} icon="pagos" tone="orange" />
+          <StatCard label="Mis próximas etapas" value={String(proximas.length)} icon="agenda" tone="violet" />
+        </div>
+        <ProximasCard proximas={proximas} empName={empName} />
+      </Guard>
+    );
+  }
+
+  // ---- Vista negocio ----
   return (
     <Guard module="dashboard">
-      <PageHeader
-        title={`Hola, ${currentUser?.nombre.split(" ")[0]} 👋`}
-        subtitle="Resumen general de El Faro 360"
-      />
+      <PageHeader title={`Hola, ${currentUser?.nombre.split(" ")[0]} 👋`} subtitle="Indicadores del negocio · El Faro 360" />
 
-      {/* Stats */}
-      {!isEmpleado && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Facturación del mes" value={formatCurrency(facturacionMes)} icon="cobros" tone="green" hint="Cobros registrados" />
-          <StatCard label="Presup. pendientes" value={String(pendientes.length)} icon="presupuestos" tone="brand" hint={formatCurrency(pendientesValor)} />
-          <StatCard label="Órdenes en curso" value={String(ordenesEnCurso.length)} icon="ordenes" tone="orange" hint="En producción" />
-          <StatCard label="Próximos trabajos" value={String(proximas.length)} icon="agenda" tone="violet" hint="Etapas agendadas" />
-        </div>
-      )}
+      {/* Finanzas */}
+      <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-content-subtle">Finanzas</h2>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Total facturado" value={formatCurrency(m.ingresoReal)} icon="cobros" tone="green" hint="Cobros realizados" />
+        <StatCard label="Por cobrar" value={formatCurrency(m.porCobrar)} icon="cobros" tone="orange" hint="Pendiente de cobro" />
+        <StatCard label="Costos (mensual)" value={formatCurrency(m.costosMensuales)} icon="costos" tone="navy" hint="Fijos + variables" />
+        <StatCard label="Gastos (empleados)" value={formatCurrency(m.gastosPagados)} icon="pagos" tone="orange" hint={`Pendiente ${formatCurrency(m.gastosPendientes)}`} />
+        <StatCard label="Ganancia real" value={formatCurrency(m.gananciaReal)} icon="trending" tone={m.gananciaReal >= 0 ? "green" : "red"} hint="Cobrado − pagos" />
+        <StatCard label="Facturado proyectado" value={formatCurrency(m.facturadoProyectado)} icon="reportes" tone="brand" hint="Presupuestos aprobados" />
+      </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* Próximos trabajos */}
-        <div className="card lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="font-display text-base font-bold">
-              {isEmpleado ? "Mis próximas etapas" : "Próximos trabajos agendados"}
-            </h2>
-            <Link href="/agenda" className="flex items-center gap-1 text-xs font-medium text-brand hover:underline">
-              Ver agenda <Icon name="arrowRight" size={14} />
-            </Link>
-          </div>
-          <div className="divide-y divide-line">
-            {proximas.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-content-muted">No hay etapas próximas.</p>
-            )}
-            {proximas.map((p, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-3">
-                <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-surface-overlay text-center">
-                  <span className="text-xs font-bold leading-none">{formatDate(p.fecha).split(" ")[0]}</span>
-                  <span className="text-[9px] uppercase text-content-subtle">{formatDate(p.fecha).split(" ")[1]}</span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{p.cliente}</p>
-                  <p className="truncate text-xs text-content-subtle">
-                    {p.numero} · {empName(p.empleadoId)}
-                  </p>
-                </div>
-                <Badge tone={etapaTone[p.etapa]} dot>
-                  {etapaLabels[p.etapa]}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Comercial */}
+      <h2 className="mb-3 mt-6 font-display text-sm font-bold uppercase tracking-wide text-content-subtle">Comercial y producción</h2>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Presup. enviados" value={String(m.presupEnviados)} icon="presupuestos" tone="brand" />
+        <StatCard label="Presup. aprobados" value={String(m.presupAprobados)} icon="presupuestos" tone="green" />
+        <StatCard label="En ejecución" value={String(m.ordenesEjecucion)} icon="ordenes" tone="orange" hint="Órdenes en curso" />
+        <StatCard label="Finalizadas" value={String(m.ordenesFinalizadas)} icon="ordenes" tone="green" hint="Órdenes entregadas" />
+      </div>
 
-        {/* Presupuestos pendientes */}
-        <div className="card">
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="font-display text-base font-bold">Presupuestos</h2>
-            {!isEmpleado && (
-              <Link href="/presupuestos" className="flex items-center gap-1 text-xs font-medium text-brand hover:underline">
-                Ver todos <Icon name="arrowRight" size={14} />
-              </Link>
-            )}
-          </div>
-          <div className="divide-y divide-line">
-            {presupuestos.slice(0, 5).map((p) => {
-              const total = computeQuote(p.items, p.config, p.metodoPago).total;
-              return (
-                <div key={p.id} className="flex items-center justify-between gap-2 px-5 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{clienteName(p.clienteId)}</p>
-                    <p className="truncate text-xs text-content-subtle">{p.numero} · {formatCurrency(total)}</p>
-                  </div>
-                  <Badge tone={estadoPresupuestoTone[p.estado]}>{estadoPresupuestoLabels[p.estado]}</Badge>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div className="mt-6">
+        <ProximasCard proximas={proximas} empName={empName} />
       </div>
     </Guard>
+  );
+}
+
+function ProximasCard({
+  proximas,
+  empName,
+}: {
+  proximas: { numero: string; etapa: EtapaKey; fecha: string; empleadoId: string | null; cliente: string }[];
+  empName: (id: string | null) => string;
+}) {
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <h2 className="font-display text-base font-bold">Próximos trabajos agendados</h2>
+        <Link href="/agenda" className="flex items-center gap-1 text-xs font-medium text-brand hover:underline">
+          Ver agenda <Icon name="arrowRight" size={14} />
+        </Link>
+      </div>
+      <div className="divide-y divide-line">
+        {proximas.length === 0 && <p className="px-5 py-8 text-center text-sm text-content-muted">No hay etapas próximas.</p>}
+        {proximas.map((p, i) => (
+          <div key={i} className="flex items-center gap-3 px-5 py-3">
+            <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-surface-overlay text-center">
+              <span className="text-xs font-bold leading-none">{formatDate(p.fecha).split(" ")[0]}</span>
+              <span className="text-[9px] uppercase text-content-subtle">{formatDate(p.fecha).split(" ")[1]}</span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{p.cliente}</p>
+              <p className="truncate text-xs text-content-subtle">{p.numero} · {empName(p.empleadoId)}</p>
+            </div>
+            <Badge tone={etapaTone[p.etapa]} dot>{etapaLabels[p.etapa]}</Badge>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

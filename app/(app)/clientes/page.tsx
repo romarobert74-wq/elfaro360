@@ -7,29 +7,37 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Field, TextInput, TextArea, Select } from "@/components/ui/Field";
+import { Field, TextInput, TextArea } from "@/components/ui/Field";
+import { CatalogSelect } from "@/components/ui/CatalogSelect";
 import { RowActions } from "@/components/ui/RowActions";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
-import { tipoClienteLabels, tipoClienteTone } from "@/lib/labels";
-import { uid } from "@/lib/format";
-import type { Cliente, TipoCliente } from "@/lib/types";
+import { catalogLabel, toneForValue } from "@/lib/labels";
+import { slug, uid } from "@/lib/format";
+import type { Cliente } from "@/lib/types";
 
 const empty: Omit<Cliente, "id"> = {
   nombre: "",
   razonSocial: "",
   tipoCliente: "inmobiliaria",
   telefono: "",
-  whatsapp: "",
   redes: { instagram: "" },
   web: "",
   notas: "",
 };
 
 export default function ClientesPage() {
-  const { clientes, destinos, addCliente, updateCliente, removeCliente, can } = useStore();
+  const { clientes, destinos, settings, updateSettings, addCliente, updateCliente, removeCliente, can } = useStore();
+  const tiposCliente = settings.catalogos.tiposCliente;
+  const crearTipoCliente = (label: string) => {
+    const value = slug(label);
+    if (!tiposCliente.some((t) => t.value === value)) {
+      updateSettings({ ...settings, catalogos: { ...settings.catalogos, tiposCliente: [...tiposCliente, { value, label, permiteCuotas: false }] } });
+    }
+    return value;
+  };
   const editable = can("clientes", "edit");
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(false);
@@ -81,16 +89,16 @@ export default function ClientesPage() {
     {
       key: "tipo",
       header: "Tipo",
-      render: (c) => <Badge tone={tipoClienteTone[c.tipoCliente]}>{tipoClienteLabels[c.tipoCliente]}</Badge>,
+      render: (c) => <Badge tone={toneForValue(c.tipoCliente)}>{catalogLabel(tiposCliente, c.tipoCliente)}</Badge>,
     },
     {
       key: "contacto",
-      header: "Contacto",
+      header: "WhatsApp / Tel.",
       hideOnMobile: true,
       render: (c) => (
         <div className="flex items-center gap-2 text-xs text-content-muted">
-          {c.whatsapp && <Icon name="whatsapp" size={14} className="text-spectrum-green" />}
-          <span>{c.telefono || c.whatsapp || "—"}</span>
+          {c.telefono && <Icon name="whatsapp" size={14} className="text-spectrum-green" />}
+          <span>{c.telefono || "—"}</span>
         </div>
       ),
     },
@@ -168,21 +176,14 @@ export default function ClientesPage() {
           <Field label="Razón social">
             <TextInput value={form.razonSocial} onChange={(e) => setForm({ ...form, razonSocial: e.target.value })} />
           </Field>
-          <Field label="Tipo de cliente">
-            <Select value={form.tipoCliente} onChange={(e) => setForm({ ...form, tipoCliente: e.target.value as TipoCliente })}>
-              <option value="inmobiliaria">Inmobiliaria</option>
-              <option value="destino_turistico">Destino turístico</option>
-              <option value="otros">Otros</option>
-            </Select>
+          <Field label="Tipo de cliente" hint="Podés crear tipos nuevos con el +">
+            <CatalogSelect items={tiposCliente} value={form.tipoCliente} onChange={(v) => setForm({ ...form, tipoCliente: v })} onCreate={crearTipoCliente} />
           </Field>
           <Field label="Web">
             <TextInput value={form.web} onChange={(e) => setForm({ ...form, web: e.target.value })} placeholder="https://" />
           </Field>
-          <Field label="Teléfono">
-            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-          </Field>
-          <Field label="WhatsApp">
-            <TextInput value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+          <Field label="WhatsApp / Teléfono">
+            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="+54 9 261 …" />
           </Field>
           <Field label="Instagram">
             <TextInput value={form.redes.instagram ?? ""} onChange={(e) => setForm({ ...form, redes: { ...form.redes, instagram: e.target.value } })} placeholder="@usuario" />

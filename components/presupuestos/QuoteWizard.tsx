@@ -9,7 +9,7 @@ import { ResumenCalculo } from "./ResumenCalculo";
 import { useStore } from "@/components/providers/StoreProvider";
 import { computeQuote, zonaParaKm } from "@/lib/calc";
 import { formatCurrency, uid } from "@/lib/format";
-import { metodoPagoLabels } from "@/lib/labels";
+import { catalogLabel, metodoPagoLabels } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import type {
   MetodoPago,
@@ -84,7 +84,7 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
     setConfig((c) => ({ ...c, manoObra: costoServicios }));
   }, [costoServicios]);
 
-  const cuotasDisponible = cliente?.tipoCliente === "destino_turistico";
+  const cuotasDisponible = !!settings.catalogos.tiposCliente.find((t) => t.value === cliente?.tipoCliente)?.permiteCuotas;
   useEffect(() => {
     if (!cuotasDisponible && metodoPago === "cuotas_2") setMetodoPago("efectivo");
   }, [cuotasDisponible, metodoPago]);
@@ -179,7 +179,7 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
               {cliente && (
                 <div className="rounded-lg border border-line bg-surface-base p-4 text-sm sm:col-span-2">
                   <div className="flex flex-wrap items-center gap-3">
-                    <Badge tone="brand">{cliente.tipoCliente === "destino_turistico" ? "Destino turístico" : cliente.tipoCliente === "inmobiliaria" ? "Inmobiliaria" : "Otros"}</Badge>
+                    <Badge tone="brand">{catalogLabel(settings.catalogos.tiposCliente, cliente.tipoCliente)}</Badge>
                     {destino && (
                       <>
                         <span className="text-content-muted"><Icon name="destinos" size={14} className="mr-1 inline" />{destino.distanciaKm} km</span>

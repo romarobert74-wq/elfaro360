@@ -8,7 +8,7 @@ import { Field, TextInput } from "@/components/ui/Field";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
-import { uid } from "@/lib/format";
+import { slug, uid } from "@/lib/format";
 import type { AppSettings, ZonaTraslado } from "@/lib/types";
 
 function Section({ icon, title, subtitle, tone = "#007FFF", children }: { icon: string; title: string; subtitle?: string; tone?: string; children: React.ReactNode }) {
@@ -47,6 +47,21 @@ export default function ConfiguracionPage() {
   const addZona = () =>
     setDraft((d) => ({ ...d, zonas: [...d.zonas, { id: uid("z"), nombre: "Nueva zona", kmHasta: 0, costo: 0 }] }));
   const removeZona = (id: string) => setDraft((d) => ({ ...d, zonas: d.zonas.filter((z) => z.id !== id) }));
+
+  type CatKey = "verticales" | "tiposServicio" | "puestos";
+  const setCatItem = (key: CatKey, i: number, label: string) =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, [key]: d.catalogos[key].map((it, idx) => (idx === i ? { ...it, label } : it)) } }));
+  const addCatItem = (key: CatKey) =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, [key]: [...d.catalogos[key], { value: slug("nuevo " + Date.now()), label: "Nuevo" }] } }));
+  const removeCatItem = (key: CatKey, i: number) =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, [key]: d.catalogos[key].filter((_, idx) => idx !== i) } }));
+
+  const setTipoCli = (i: number, patch: Partial<{ label: string; permiteCuotas: boolean }>) =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, tiposCliente: d.catalogos.tiposCliente.map((it, idx) => (idx === i ? { ...it, ...patch } : it)) } }));
+  const addTipoCli = () =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, tiposCliente: [...d.catalogos.tiposCliente, { value: slug("tipo " + Date.now()), label: "Nuevo tipo", permiteCuotas: false }] } }));
+  const removeTipoCli = (i: number) =>
+    setDraft((d) => ({ ...d, catalogos: { ...d.catalogos, tiposCliente: d.catalogos.tiposCliente.filter((_, idx) => idx !== i) } }));
 
   const save = () => updateSettings(draft);
 
@@ -154,6 +169,39 @@ export default function ConfiguracionPage() {
             <Icon name="plus" size={16} /> Añadir zona
           </button>
         </Section>
+
+        <Section icon="clientes" title="Tipos de cliente" subtitle="El flag habilita el pago en 2 cuotas" tone="#1A2B62">
+          <div className="space-y-2">
+            {draft.catalogos.tiposCliente.map((t, i) => (
+              <div key={t.value} className="flex items-center gap-2">
+                <TextInput className="flex-1" value={t.label} onChange={(e) => setTipoCli(i, { label: e.target.value })} />
+                <button type="button" onClick={() => setTipoCli(i, { permiteCuotas: !t.permiteCuotas })} className={cn("rounded-lg border px-2 py-2 text-xs font-medium transition", t.permiteCuotas ? "border-brand/40 bg-brand/15 text-brand" : "border-line text-content-subtle")} title="Permite pago en 2 cuotas">
+                  Cuotas {t.permiteCuotas ? "sí" : "no"}
+                </button>
+                <button type="button" onClick={() => removeTipoCli(i)} className="rounded-lg p-2 text-content-muted hover:text-spectrum-red"><Icon name="trash" size={16} /></button>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={addTipoCli} className="btn-ghost mt-2 w-full"><Icon name="plus" size={16} /> Añadir tipo</button>
+        </Section>
+
+        {([
+          { key: "verticales" as const, title: "Verticales de destino", icon: "destinos", tone: "#642A72" },
+          { key: "tiposServicio" as const, title: "Tipos de servicio", icon: "servicios", tone: "#007FFF" },
+          { key: "puestos" as const, title: "Puestos de empleado", icon: "empleados", tone: "#C85311" },
+        ]).map((cat) => (
+          <Section key={cat.key} icon={cat.icon} title={cat.title} tone={cat.tone}>
+            <div className="space-y-2">
+              {draft.catalogos[cat.key].map((it, i) => (
+                <div key={it.value} className="flex items-center gap-2">
+                  <TextInput className="flex-1" value={it.label} onChange={(e) => setCatItem(cat.key, i, e.target.value)} />
+                  <button type="button" onClick={() => removeCatItem(cat.key, i)} className="rounded-lg p-2 text-content-muted hover:text-spectrum-red"><Icon name="trash" size={16} /></button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => addCatItem(cat.key)} className="btn-ghost mt-2 w-full"><Icon name="plus" size={16} /> Añadir</button>
+          </Section>
+        ))}
 
         <Section icon="clientes" title="Datos de la empresa" subtitle="Aparecen en el PDF del presupuesto" tone="#03C2D1">
           <div className="grid gap-4 sm:grid-cols-2">

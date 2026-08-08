@@ -7,16 +7,17 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Field, TextInput, TextArea, Select } from "@/components/ui/Field";
+import { Field, TextInput, Select } from "@/components/ui/Field";
+import { CatalogSelect } from "@/components/ui/CatalogSelect";
 import { RowActions } from "@/components/ui/RowActions";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
-import { verticalLabels, verticalTone } from "@/lib/labels";
+import { catalogLabel, toneForValue } from "@/lib/labels";
 import { zonaParaKm } from "@/lib/calc";
-import { formatCurrency, uid } from "@/lib/format";
-import type { Destino, Vertical } from "@/lib/types";
+import { formatCurrency, slug, uid } from "@/lib/format";
+import type { Destino } from "@/lib/types";
 
 const empty: Omit<Destino, "id"> = {
   clienteId: "",
@@ -24,25 +25,24 @@ const empty: Omit<Destino, "id"> = {
   direccion: "",
   distanciaKm: 0,
   telefono: "",
-  whatsapp: "",
   redes: {},
   web: "",
   vertical: "real_estate",
-  datos: {},
-};
-
-// Campo específico según vertical
-const datoConfig: Record<Vertical, { key: keyof Destino["datos"]; label: string; unidad: string } | null> = {
-  real_estate: { key: "m2", label: "Metros cuadrados", unidad: "m²" },
-  hotel: { key: "habitaciones", label: "Habitaciones", unidad: "hab." },
-  bodega: { key: "hectareas", label: "Hectáreas", unidad: "ha" },
-  restaurante: { key: "mesas", label: "Mesas", unidad: "mesas" },
-  otro: null,
+  campos: [],
 };
 
 export default function DestinosPage() {
-  const { destinos, clientes, settings, addDestino, updateDestino, removeDestino, can } = useStore();
+  const { destinos, clientes, settings, updateSettings, addDestino, updateDestino, removeDestino, can } = useStore();
   const editable = can("destinos", "edit");
+  const verticales = settings.catalogos.verticales;
+  const crearVertical = (label: string) => {
+    const value = slug(label);
+    if (!verticales.some((v) => v.value === value)) {
+      updateSettings({ ...settings, catalogos: { ...settings.catalogos, verticales: [...verticales, { value, label }] } });
+    }
+    return value;
+  };
+
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Destino | null>(null);
@@ -63,25 +63,21 @@ export default function DestinosPage() {
     [destinos, q, clientes]
   );
 
-  const openNew = () => {
-    setEditing(null);
-    setForm({ ...empty, clienteId: clientes[0]?.id ?? "" });
-    setModal(true);
-  };
-  const openEdit = (d: Destino) => {
-    setEditing(d);
-    const { id, ...rest } = d;
-    setForm(rest);
-    setModal(true);
-  };
+  const openNew = () => { setEditing(null); setForm({ ...empty, clienteId: clientes[0]?.id ?? "" }); setModal(true); };
+  const openEdit = (d: Destino) => { setEditing(d); const { id, ...rest } = d; setForm(rest); setModal(true); };
   const save = () => {
     if (!form.nombre.trim() || !form.clienteId) return;
-    if (editing) updateDestino({ ...form, id: editing.id });
-    else addDestino({ ...form, id: uid("des") });
+    const clean = { ...form, campos: form.campos.filter((c) => c.label.trim() || c.value.trim()) };
+    if (editing) updateDestino({ ...clean, id: editing.id });
+    else addDestino({ ...clean, id: uid("des") });
     setModal(false);
   };
 
-  const datoActual = datoConfig[form.vertical];
+  // Campos flexibles
+  const addCampo = () => setForm((f) => ({ ...f, campos: [...f.campos, { id: uid("c"), label: "", value: "" }] }));
+  const setCampo = (id: string, patch: Partial<{ label: string; value: string }>) =>
+    setForm((f) => ({ ...f, campos: f.campos.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+  const removeCampo = (id: string) => setForm((f) => ({ ...f, campos: f.campos.filter((c) => c.id !== id) }));
 
   const zonaHint = (() => {
     const z = zonaParaKm(form.distanciaKm, settings.zonas);
@@ -90,12 +86,7 @@ export default function DestinosPage() {
     return `${z.nombre} · traslado al cliente ${costo} · pago al relevador ${formatCurrency(form.distanciaKm * settings.tarifaKmEmpleado)}`;
   })();
 
-  const datoResumen = (d: Destino) => {
-    const cfg = datoConfig[d.vertical];
-    if (!cfg) return d.datos.extra || "—";
-    const val = d.datos[cfg.key];
-    return val ? `${val} ${cfg.unidad}` : "—";
-  };
+  const camposResumen = (d: Destino) => (d.campos.length ? d.campos.map((c) => `${c.value} ${c.label}`).join(" · ") : "—");
 
   const columns: Column<Destino>[] = [
     {
@@ -109,15 +100,10 @@ export default function DestinosPage() {
       ),
     },
     { key: "cliente", header: "Cliente", hideOnMobile: true, render: (d) => <span className="text-content-muted">{clienteName(d.clienteId)}</span> },
-    { key: "vertical", header: "Vertical", render: (d) => <Badge tone={verticalTone[d.vertical]}>{verticalLabels[d.vertical]}</Badge> },
-    { key: "dato", header: "Datos", hideOnMobile: true, render: (d) => <span className="text-content-muted">{datoResumen(d)}</span> },
+    { key: "vertical", header: "Vertical", render: (d) => <Badge tone={toneForValue(d.vertical)}>{catalogLabel(verticales, d.vertical)}</Badge> },
+    { key: "dato", header: "Datos", hideOnMobile: true, render: (d) => <span className="text-content-muted">{camposResumen(d)}</span> },
     { key: "km", header: "Distancia", hideOnMobile: true, render: (d) => <span className="text-content-muted">{d.distanciaKm} km</span> },
-    {
-      key: "actions",
-      header: "",
-      className: "text-right w-24",
-      render: (d) => <RowActions disabled={!editable} onEdit={() => openEdit(d)} onDelete={() => setToDelete(d)} />,
-    },
+    { key: "actions", header: "", className: "text-right w-24", render: (d) => <RowActions disabled={!editable} onEdit={() => openEdit(d)} onDelete={() => setToDelete(d)} /> },
   ];
 
   return (
@@ -125,13 +111,11 @@ export default function DestinosPage() {
       <PageHeader
         title="Destinos"
         subtitle="Lugares a virtualizar, asociados a cada cliente"
-        actions={
-          editable && (
-            <button className="btn-primary" onClick={openNew} disabled={clientes.length === 0}>
-              <Icon name="plus" size={16} /> Nuevo destino
-            </button>
-          )
-        }
+        actions={editable && (
+          <button className="btn-primary" onClick={openNew} disabled={clientes.length === 0}>
+            <Icon name="plus" size={16} /> Nuevo destino
+          </button>
+        )}
       />
 
       <div className="mb-4">
@@ -141,13 +125,7 @@ export default function DestinosPage() {
       <DataTable
         columns={columns}
         rows={filtered}
-        empty={
-          <EmptyState
-            icon="destinos"
-            title="Sin destinos"
-            description={clientes.length === 0 ? "Primero cargá un cliente para poder asociar destinos." : "Todavía no cargaste destinos."}
-          />
-        }
+        empty={<EmptyState icon="destinos" title="Sin destinos" description={clientes.length === 0 ? "Primero cargá un cliente." : "Todavía no cargaste destinos."} />}
       />
 
       <Modal
@@ -165,9 +143,7 @@ export default function DestinosPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Cliente *">
             <Select value={form.clienteId} onChange={(e) => setForm({ ...form, clienteId: e.target.value })}>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
+              {clientes.map((c) => (<option key={c.id} value={c.id}>{c.nombre}</option>))}
             </Select>
           </Field>
           <div className="flex items-end">
@@ -176,14 +152,7 @@ export default function DestinosPage() {
               onClick={() => {
                 const c = clientes.find((x) => x.id === form.clienteId);
                 if (!c) return;
-                setForm({
-                  ...form,
-                  nombre: c.nombre,
-                  telefono: c.telefono,
-                  whatsapp: c.whatsapp,
-                  redes: { ...c.redes },
-                  web: c.web,
-                });
+                setForm({ ...form, nombre: c.nombre, telefono: c.telefono, redes: { ...c.redes }, web: c.web });
               }}
               className="btn-ghost w-full"
               title="Copiar los datos del cliente al destino"
@@ -197,46 +166,37 @@ export default function DestinosPage() {
           <Field label="Dirección" className="sm:col-span-2">
             <TextInput value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
           </Field>
-          <Field label="Vertical">
-            <Select
-              value={form.vertical}
-              onChange={(e) => setForm({ ...form, vertical: e.target.value as Vertical, datos: {} })}
-            >
-              <option value="real_estate">Real Estate</option>
-              <option value="bodega">Bodega</option>
-              <option value="hotel">Hotel</option>
-              <option value="restaurante">Restaurante</option>
-              <option value="otro">Otro</option>
-            </Select>
+          <Field label="Vertical" hint="Podés crear verticales nuevas con el +">
+            <CatalogSelect items={verticales} value={form.vertical} onChange={(v) => setForm({ ...form, vertical: v })} onCreate={crearVertical} />
           </Field>
-          {/* Campo flexible según vertical */}
-          {datoActual ? (
-            <Field label={datoActual.label} hint={`Dato específico para ${verticalLabels[form.vertical].toLowerCase()}`}>
-              <TextInput
-                type="number"
-                min={0}
-                value={(form.datos[datoActual.key] as number | undefined) ?? ""}
-                onChange={(e) => setForm({ ...form, datos: { ...form.datos, [datoActual.key]: Number(e.target.value) } })}
-              />
-            </Field>
-          ) : (
-            <Field label="Dato específico">
-              <TextInput value={form.datos.extra ?? ""} onChange={(e) => setForm({ ...form, datos: { extra: e.target.value } })} />
-            </Field>
-          )}
           <Field label="Distancia (km)" hint={zonaHint}>
             <TextInput type="number" min={0} value={form.distanciaKm} onChange={(e) => setForm({ ...form, distanciaKm: Number(e.target.value) })} />
           </Field>
-          <Field label="Teléfono">
-            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-          </Field>
-          <Field label="WhatsApp">
-            <TextInput value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+
+          {/* Campos flexibles */}
+          <div className="sm:col-span-2">
+            <p className="label">Datos del lugar</p>
+            <div className="space-y-2">
+              {form.campos.map((c) => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <TextInput className="flex-1" placeholder="Dato (ej. M² cubiertos)" value={c.label} onChange={(e) => setCampo(c.id, { label: e.target.value })} />
+                  <TextInput className="w-32" placeholder="Valor" value={c.value} onChange={(e) => setCampo(c.id, { value: e.target.value })} />
+                  <button type="button" onClick={() => removeCampo(c.id)} className="rounded-lg p-2 text-content-muted hover:text-spectrum-red"><Icon name="x" size={16} /></button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addCampo} className="btn-ghost mt-2 w-full">
+              <Icon name="plus" size={16} /> Añadir dato (m² cubiertos, terreno, habitaciones…)
+            </button>
+          </div>
+
+          <Field label="WhatsApp / Teléfono">
+            <TextInput value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="+54 9 261 …" />
           </Field>
           <Field label="Instagram">
             <TextInput value={form.redes.instagram ?? ""} onChange={(e) => setForm({ ...form, redes: { ...form.redes, instagram: e.target.value } })} />
           </Field>
-          <Field label="Web">
+          <Field label="Web" className="sm:col-span-2">
             <TextInput value={form.web} onChange={(e) => setForm({ ...form, web: e.target.value })} placeholder="https://" />
           </Field>
         </div>
