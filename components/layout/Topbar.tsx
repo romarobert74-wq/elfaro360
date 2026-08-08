@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { Logo } from "@/components/Logo";
+import { EnvBadge } from "./EnvBadge";
 import { Badge } from "@/components/ui/Badge";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useStore } from "@/components/providers/StoreProvider";
@@ -40,6 +41,10 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
       </button>
       <div className="lg:hidden">
         <Logo size="sm" />
+      </div>
+
+      <div className="hidden sm:block">
+        <EnvBadge />
       </div>
 
       <div className="ml-auto flex items-center gap-2">
