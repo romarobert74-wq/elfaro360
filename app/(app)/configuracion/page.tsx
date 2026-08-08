@@ -73,6 +73,7 @@ export default function ConfiguracionPage() {
         actions={
           <>
             <Link href="/configuracion/permisos" className="btn-ghost"><Icon name="permisos" size={16} /> Permisos</Link>
+            <Link href="/configuracion/backup" className="btn-ghost"><Icon name="config" size={16} /> Backup</Link>
             <Link href="/configuracion/seed" className="btn-ghost"><Icon name="config" size={16} /> Firebase</Link>
             {editable && (
               <button className="btn-primary" onClick={save} disabled={!dirty}>
