@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/Badge";
 import { Field, TextInput } from "@/components/ui/Field";
+import { EnvBadge } from "@/components/layout/EnvBadge";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
 import { roleLabels } from "@/lib/labels";
@@ -62,7 +63,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink p-4">
+    <div className="dark relative flex min-h-screen items-center justify-center overflow-hidden bg-ink p-4">
       <div className="pointer-events-none absolute inset-0 bg-brand-glow" />
       <div className="pointer-events-none absolute -left-1/4 top-1/4 h-[520px] w-[820px] -rotate-12 rounded-full bg-faro-beam opacity-[0.07] blur-3xl" />
 
@@ -142,9 +143,12 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-content-subtle">
-          {backend === "firebase" ? "El Faro 360 · datos en Firebase" : "Fase 1 · Datos mock en memoria"}
-        </p>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <EnvBadge />
+          <p className="text-center text-xs text-content-subtle">
+            {backend === "firebase" ? "El Faro 360 · datos en Firebase" : "Fase 1 · Datos mock en memoria"}
+          </p>
+        </div>
       </div>
     </div>
   );
