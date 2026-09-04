@@ -138,6 +138,8 @@ export interface PresupuestoConfig {
   ivaPct: number;
   conIva: boolean; // switch con/sin IVA
   materialesFacturables: number;
+  descuentoValor: number; // valor del descuento (% o $ según flag)
+  descuentoEsPorcentaje: boolean; // true = %, false = monto fijo
 }
 
 export interface Presupuesto {
@@ -230,6 +232,9 @@ export interface AppSettings {
     cuit: string;
     email: string;
     telefono: string;
+    aliasMercadoPago: string;
+    contactoNombre: string;
+    contactoCel: string;
   };
   // Catálogos dinámicos (se editan en Configuración)
   catalogos: {
