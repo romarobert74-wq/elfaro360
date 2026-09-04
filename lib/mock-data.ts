@@ -24,8 +24,11 @@ export const appSettings: AppSettings = {
   empresa: {
     nombre: "El Faro 360",
     cuit: "30-71727272-3",
-    email: "hola@elfaro360.com",
-    telefono: "+54 9 261 555 0360",
+    email: "admelfaro360@gmail.com",
+    telefono: "+54 9 261 665 7058",
+    aliasMercadoPago: "elfaro360",
+    contactoNombre: "Roberto Martinez",
+    contactoCel: "2616657058",
   },
   catalogos: {
     tiposCliente: [

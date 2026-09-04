@@ -230,6 +230,9 @@ export interface AppSettings {
     cuit: string;
     email: string;
     telefono: string;
+    aliasMercadoPago: string;
+    contactoNombre: string;
+    contactoCel: string;
   };
   // Catálogos dinámicos (se editan en Configuración)
   catalogos: {

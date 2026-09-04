@@ -132,11 +132,24 @@ export function VistaCliente({
           </div>
         </div>
 
-        {/* Método de pago + pie */}
-        <div className="mt-6 border-t border-neutral-200 pt-4 text-xs text-neutral-500">
-          <p><span className="font-semibold text-neutral-700">Método de pago:</span> {metodoPagoLabels[presupuesto.metodoPago]}</p>
-          {presupuesto.notas && <p className="mt-1">{presupuesto.notas}</p>}
-          <p className="mt-3">{appSettings.empresa.nombre} · {appSettings.empresa.email} · {appSettings.empresa.telefono}</p>
+        {/* Método de pago + datos de pago y contacto */}
+        <div className="mt-6 border-t border-neutral-200 pt-4 text-xs text-neutral-600">
+          <p><span className="font-semibold text-neutral-800">Método de pago:</span> {metodoPagoLabels[presupuesto.metodoPago]}</p>
+          {presupuesto.notas && <p className="mt-1 text-neutral-500">{presupuesto.notas}</p>}
+
+          <div className="mt-3 grid grid-cols-1 gap-3 rounded-lg bg-neutral-50 p-3 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Datos de pago</p>
+              <p><span className="font-semibold text-neutral-800">Alias Mercado Pago:</span> {appSettings.empresa.aliasMercadoPago}</p>
+              <p className="text-neutral-500">{appSettings.empresa.nombre}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Contacto</p>
+              <p className="font-semibold text-neutral-800">{appSettings.empresa.contactoNombre}</p>
+              <p>Cel: {appSettings.empresa.contactoCel}</p>
+              <p>{appSettings.empresa.email}</p>
+            </div>
+          </div>
         </div>
       </div>
     </Modal>
