@@ -138,6 +138,8 @@ export interface PresupuestoConfig {
   ivaPct: number;
   conIva: boolean; // switch con/sin IVA
   materialesFacturables: number;
+  descuentoValor: number; // valor del descuento (% o $ según flag)
+  descuentoEsPorcentaje: boolean; // true = %, false = monto fijo
 }
 
 export interface Presupuesto {

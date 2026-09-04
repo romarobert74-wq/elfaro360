@@ -46,6 +46,8 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
     ivaPct: settings.ivaPctDefault,
     conIva: settings.conIvaDefault,
     materialesFacturables: 0,
+    descuentoValor: 0,
+    descuentoEsPorcentaje: true,
   });
 
   const [step, setStep] = useState(0);
@@ -324,8 +326,25 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
                 </button>
               </div>
 
-              <Field label="Notas del presupuesto" className="sm:col-span-2">
-                <TextArea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Condiciones, aclaraciones…" />
+              {/* Descuento */}
+              <Field label="Descuento" hint="Se resta del subtotal (antes de IVA)" className="sm:col-span-2">
+                <div className="flex items-center gap-2">
+                  <TextInput
+                    type="number"
+                    min={0}
+                    value={config.descuentoValor}
+                    onChange={(e) => setConfig({ ...config, descuentoValor: Number(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <div className="flex overflow-hidden rounded-lg border border-line">
+                    <button type="button" onClick={() => setConfig({ ...config, descuentoEsPorcentaje: true })} className={cn("px-4 py-2 text-sm font-medium transition", config.descuentoEsPorcentaje ? "bg-brand text-white" : "text-content-muted hover:bg-surface-overlay")}>%</button>
+                    <button type="button" onClick={() => setConfig({ ...config, descuentoEsPorcentaje: false })} className={cn("px-4 py-2 text-sm font-medium transition", !config.descuentoEsPorcentaje ? "bg-brand text-white" : "text-content-muted hover:bg-surface-overlay")}>$</button>
+                  </div>
+                </div>
+              </Field>
+
+              <Field label="Descripción (la ve el cliente)" className="sm:col-span-2">
+                <TextArea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej. Incluye: Video Dron de 30 a 45 seg aprox, más 10 fotos aéreas 9:16 para redes…" />
               </Field>
             </div>
           )}

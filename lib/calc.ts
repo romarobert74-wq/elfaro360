@@ -7,7 +7,8 @@ export interface CalcResult {
   traslado: number; // costo de la zona (o override)
   recargoCuotas: number;
   materialesFact: number; // serviciosTotal + extras
-  subtotal: number;
+  descuento: number; // monto del descuento aplicado
+  subtotal: number; // subtotal ya con descuento aplicado
   iva: number;
   total: number; // TOTAL que paga el cliente
   // ---- Análisis interno (rentabilidad) ----
@@ -64,7 +65,14 @@ export function computeQuote(
   }
 
   const materialesFact = serviciosTotal + config.materialesFacturables;
-  const subtotal = materialesFact + traslado + recargoCuotas;
+  const subtotalBruto = materialesFact + traslado + recargoCuotas;
+
+  // Descuento (porcentaje sobre el subtotal, o monto fijo)
+  const descuento = config.descuentoEsPorcentaje
+    ? round(subtotalBruto * ((config.descuentoValor || 0) / 100))
+    : (config.descuentoValor || 0);
+
+  const subtotal = subtotalBruto - descuento;
   const iva = config.conIva ? round(subtotal * (config.ivaPct / 100)) : 0;
   const total = subtotal + iva;
 
@@ -79,6 +87,7 @@ export function computeQuote(
     traslado,
     recargoCuotas,
     materialesFact,
+    descuento,
     subtotal,
     iva,
     total,

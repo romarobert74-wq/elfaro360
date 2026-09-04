@@ -38,6 +38,7 @@ export function ResumenCalculo({ calc }: { calc: CalcResult }) {
         <Row label="Servicios" value={formatCurrency(calc.materialesFact)} />
         {calc.traslado > 0 && <Row label="Traslado (zona)" value={formatCurrency(calc.traslado)} />}
         {calc.recargoCuotas > 0 && <Row label="Recargo 2 cuotas" value={formatCurrency(calc.recargoCuotas)} accent />}
+        {calc.descuento > 0 && <Row label="Descuento" value={`- ${formatCurrency(calc.descuento)}`} tone="red" />}
         <div className="my-1 border-t border-line" />
         <Row label="Subtotal" value={formatCurrency(calc.subtotal)} muted />
         <Row label="IVA" value={formatCurrency(calc.iva)} />

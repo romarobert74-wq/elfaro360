@@ -116,6 +116,12 @@ export function VistaCliente({
               <span className="tabular-nums">{formatCurrency(calc.recargoCuotas)}</span>
             </div>
           )}
+          {calc.descuento > 0 && (
+            <div className="flex justify-between py-1 text-[#B81611]">
+              <span>Descuento{presupuesto.config.descuentoEsPorcentaje ? ` (${presupuesto.config.descuentoValor}%)` : ""}</span>
+              <span className="tabular-nums">- {formatCurrency(calc.descuento)}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t border-neutral-200 py-1 text-neutral-600">
             <span>Subtotal</span>
             <span className="tabular-nums">{formatCurrency(calc.subtotal)}</span>
@@ -132,14 +138,18 @@ export function VistaCliente({
           </div>
         </div>
 
-        {/* Método de pago + datos de pago y contacto */}
+        {/* Descripción + datos de pago y contacto */}
         <div className="mt-6 border-t border-neutral-200 pt-4 text-xs text-neutral-600">
-          <p><span className="font-semibold text-neutral-800">Método de pago:</span> {metodoPagoLabels[presupuesto.metodoPago]}</p>
-          {presupuesto.notas && <p className="mt-1 text-neutral-500">{presupuesto.notas}</p>}
+          {presupuesto.notas && (
+            <p className="mb-3">
+              <span className="font-semibold text-neutral-800">Descripción:</span> {presupuesto.notas}
+            </p>
+          )}
 
-          <div className="mt-3 grid grid-cols-1 gap-3 rounded-lg bg-neutral-50 p-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 rounded-lg bg-neutral-50 p-3 sm:grid-cols-2">
             <div>
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">Datos de pago</p>
+              <p><span className="font-semibold text-neutral-800">Método de pago:</span> {metodoPagoLabels[presupuesto.metodoPago]}</p>
               <p><span className="font-semibold text-neutral-800">Alias Mercado Pago:</span> {appSettings.empresa.aliasMercadoPago}</p>
               <p className="text-neutral-500">{appSettings.empresa.nombre}</p>
             </div>
