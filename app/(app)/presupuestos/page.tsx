@@ -76,6 +76,7 @@ export default function PresupuestosPage() {
     {
       key: "numero",
       header: "Presupuesto",
+      sortValue: (p) => p.numero,
       render: (p) => (
         <div>
           <p className="font-medium">{p.numero}</p>
@@ -83,10 +84,10 @@ export default function PresupuestosPage() {
         </div>
       ),
     },
-    { key: "fecha", header: "Fecha", hideOnMobile: true, render: (p) => <span className="text-content-muted">{formatDate(p.fecha)}</span> },
-    { key: "metodo", header: "Pago", hideOnMobile: true, render: (p) => <span className="text-xs text-content-muted">{metodoPagoLabels[p.metodoPago]}</span> },
-    { key: "total", header: "Total", className: "text-right", render: (p) => <span className="font-medium tabular-nums">{formatCurrency(computeQuote(p.items, p.config, p.metodoPago).total)}</span> },
-    { key: "estado", header: "Estado", render: (p) => <Badge tone={estadoPresupuestoTone[p.estado]}>{estadoPresupuestoLabels[p.estado]}</Badge> },
+    { key: "fecha", header: "Fecha", hideOnMobile: true, sortValue: (p) => p.fecha, render: (p) => <span className="text-content-muted">{formatDate(p.fecha)}</span> },
+    { key: "metodo", header: "Pago", hideOnMobile: true, sortValue: (p) => metodoPagoLabels[p.metodoPago], render: (p) => <span className="text-xs text-content-muted">{metodoPagoLabels[p.metodoPago]}</span> },
+    { key: "total", header: "Total", className: "text-right", sortValue: (p) => computeQuote(p.items, p.config, p.metodoPago).total, render: (p) => <span className="font-medium tabular-nums">{formatCurrency(computeQuote(p.items, p.config, p.metodoPago).total)}</span> },
+    { key: "estado", header: "Estado", sortValue: (p) => p.estado, render: (p) => <Badge tone={estadoPresupuestoTone[p.estado]}>{estadoPresupuestoLabels[p.estado]}</Badge> },
     {
       key: "actions",
       header: "",

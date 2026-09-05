@@ -12,6 +12,7 @@ import {
 import { StoreCtx, useStore, type StoreValue } from "./store-context";
 import * as mock from "@/lib/mock-data";
 import { getFirebase } from "@/lib/firebase";
+import { normalizeOrden } from "@/lib/orders";
 import {
   deleteDocById,
   fetchCollection,
@@ -116,7 +117,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       servicios.setItems(se);
       costos.setItems(co);
       presupuestos.setItems(pr);
-      ordenes.setItems(or);
+      ordenes.setItems(or.map(normalizeOrden));
       empleados.setItems(em);
       pagos.setItems(pa);
       cobros.setItems(cb);
