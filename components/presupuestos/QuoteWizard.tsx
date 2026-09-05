@@ -39,6 +39,7 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
     manoObra: 0,
     manoObraOverride: null,
     estructura: estructuraDefault,
+    estructuraOverride: null,
     trasladoAuto: 0,
     trasladoOverride: null,
     garantiaPct: settings.garantiaPctDefault,
@@ -85,6 +86,11 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
   useEffect(() => {
     setConfig((c) => ({ ...c, manoObra: costoServicios }));
   }, [costoServicios]);
+
+  // Estructura automática = costos fijos mensuales / días laborales (se recalcula)
+  useEffect(() => {
+    setConfig((c) => ({ ...c, estructura: estructuraDefault }));
+  }, [estructuraDefault]);
 
   const cuotasDisponible = !!settings.catalogos.tiposCliente.find((t) => t.value === cliente?.tipoCliente)?.permiteCuotas;
   useEffect(() => {
@@ -288,8 +294,18 @@ export function QuoteWizard({ initial }: { initial?: Presupuesto }) {
                   )}
                 </div>
               </Field>
-              <Field label="Estructura" hint="Prorrateo de costos fijos por trabajo">
-                <TextInput type="number" value={config.estructura} onChange={(e) => setConfig({ ...config, estructura: Number(e.target.value) })} />
+              <Field label="Estructura" hint={`Auto: ${formatCurrency(estructuraDefault)} — costos fijos ÷ ${settings.diasLaborales} días laborales`}>
+                <div className="flex items-center gap-2">
+                  <TextInput
+                    type="number"
+                    placeholder={String(estructuraDefault)}
+                    value={config.estructuraOverride ?? ""}
+                    onChange={(e) => setConfig({ ...config, estructuraOverride: e.target.value === "" ? null : Number(e.target.value) })}
+                  />
+                  {config.estructuraOverride != null && (
+                    <button className="btn-ghost px-2 py-2" onClick={() => setConfig({ ...config, estructuraOverride: null })} title="Volver a automático"><Icon name="x" size={14} /></button>
+                  )}
+                </div>
               </Field>
               <Field label="Traslado (zona)" hint={zona ? `${zona.nombre}${zona.costo != null ? ` · ${formatCurrency(zona.costo)}` : " · a consultar (cargá manual)"}` : undefined}>
                 <div className="flex items-center gap-2">

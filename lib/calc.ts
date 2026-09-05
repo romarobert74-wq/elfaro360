@@ -53,7 +53,7 @@ export function computeQuote(
 
   // Mano de obra automática (= costo de los servicios) con opción de override manual
   const manoObra = config.manoObraOverride != null ? config.manoObraOverride : costoServicios;
-  const estructura = config.estructura;
+  const estructura = config.estructuraOverride != null ? config.estructuraOverride : config.estructura;
   const traslado = config.trasladoOverride != null ? config.trasladoOverride : config.trasladoAuto;
 
   // Recargo por pago en 2 cuotas (5% sobre el plan base / tour virtual)

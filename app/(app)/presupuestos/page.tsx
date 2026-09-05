@@ -98,9 +98,13 @@ export default function PresupuestosPage() {
           </button>
           {editable && (
             <>
-              {p.estado !== "aprobado" && (
+              {p.estado !== "aprobado" ? (
                 <button onClick={() => aprobar(p)} className="rounded-lg p-1.5 text-content-muted transition hover:bg-spectrum-green/15 hover:text-spectrum-green" title="Aprobar y generar orden">
                   <Icon name="check" size={16} />
+                </button>
+              ) : (
+                <button onClick={() => updatePresupuesto({ ...p, estado: "enviado" })} className="rounded-lg p-1.5 text-spectrum-green transition hover:bg-spectrum-orange/15 hover:text-spectrum-orange" title="Desaprobar (volver a Enviado)">
+                  <Icon name="x" size={16} />
                 </button>
               )}
               <Link href={`/presupuestos/${p.id}/editar`} className="rounded-lg p-1.5 text-content-muted transition hover:bg-brand/15 hover:text-brand" title="Editar">

@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type {
+  AgendaNota,
   AppSettings,
   Cliente,
   Cobro,
@@ -58,6 +59,7 @@ export interface StoreValue {
   empleados: Empleado[];
   pagosEmpleados: PagoEmpleado[];
   cobros: Cobro[];
+  notasAgenda: AgendaNota[];
 
   // CRUD genérico por colección
   addUser: (x: User) => void; updateUser: (x: User) => void; removeUser: (id: string) => void;
@@ -70,6 +72,7 @@ export interface StoreValue {
   addEmpleado: (x: Empleado) => void; updateEmpleado: (x: Empleado) => void; removeEmpleado: (id: string) => void;
   addPago: (x: PagoEmpleado) => void; updatePago: (x: PagoEmpleado) => void; removePago: (id: string) => void;
   addCobro: (x: Cobro) => void; updateCobro: (x: Cobro) => void; removeCobro: (id: string) => void;
+  addNota: (x: AgendaNota) => void; updateNota: (x: AgendaNota) => void; removeNota: (id: string) => void;
 }
 
 export const StoreCtx = createContext<StoreValue | null>(null);

@@ -5,7 +5,7 @@ import type { Etapa, OrdenTrabajo, Presupuesto } from "./types";
 function etapasVacias(): Etapa[] {
   return etapaOrder.map((key) => ({
     key,
-    empleadoId: null,
+    empleadoIds: [],
     fechaEstimada: null,
     fechaReal: null,
     estado: "pendiente",
