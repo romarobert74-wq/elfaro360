@@ -16,6 +16,7 @@ export const COLLECTIONS = {
   empleados: "empleados",
   pagosEmpleados: "pagosEmpleados",
   cobros: "cobros",
+  notasAgenda: "notasAgenda",
 } as const;
 
 export type CollectionName = keyof typeof COLLECTIONS;
@@ -90,6 +91,7 @@ export async function seedFirestore(onProgress?: (msg: string) => void, adminEma
     empleados: mock.empleados,
     pagosEmpleados: mock.pagosEmpleados,
     cobros: mock.cobros,
+    notasAgenda: mock.notasAgenda,
   };
 
   for (const name of Object.keys(data) as CollectionName[]) {

@@ -42,12 +42,13 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div data-modal-container className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
         onClick={onClose}
       />
       <div
+        data-modal-panel
         className={cn(
           "relative z-10 flex max-h-[92vh] w-full flex-col rounded-t-2xl border border-line bg-surface-overlay shadow-2xl animate-scale-in sm:rounded-2xl",
           widths[size]

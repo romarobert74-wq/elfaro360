@@ -76,6 +76,7 @@ export default function PresupuestosPage() {
     {
       key: "numero",
       header: "Presupuesto",
+      sortValue: (p) => p.numero,
       render: (p) => (
         <div>
           <p className="font-medium">{p.numero}</p>
@@ -83,10 +84,10 @@ export default function PresupuestosPage() {
         </div>
       ),
     },
-    { key: "fecha", header: "Fecha", hideOnMobile: true, render: (p) => <span className="text-content-muted">{formatDate(p.fecha)}</span> },
-    { key: "metodo", header: "Pago", hideOnMobile: true, render: (p) => <span className="text-xs text-content-muted">{metodoPagoLabels[p.metodoPago]}</span> },
-    { key: "total", header: "Total", className: "text-right", render: (p) => <span className="font-medium tabular-nums">{formatCurrency(computeQuote(p.items, p.config, p.metodoPago).total)}</span> },
-    { key: "estado", header: "Estado", render: (p) => <Badge tone={estadoPresupuestoTone[p.estado]}>{estadoPresupuestoLabels[p.estado]}</Badge> },
+    { key: "fecha", header: "Fecha", hideOnMobile: true, sortValue: (p) => p.fecha, render: (p) => <span className="text-content-muted">{formatDate(p.fecha)}</span> },
+    { key: "metodo", header: "Pago", hideOnMobile: true, sortValue: (p) => metodoPagoLabels[p.metodoPago], render: (p) => <span className="text-xs text-content-muted">{metodoPagoLabels[p.metodoPago]}</span> },
+    { key: "total", header: "Total", className: "text-right", sortValue: (p) => computeQuote(p.items, p.config, p.metodoPago).total, render: (p) => <span className="font-medium tabular-nums">{formatCurrency(computeQuote(p.items, p.config, p.metodoPago).total)}</span> },
+    { key: "estado", header: "Estado", sortValue: (p) => p.estado, render: (p) => <Badge tone={estadoPresupuestoTone[p.estado]}>{estadoPresupuestoLabels[p.estado]}</Badge> },
     {
       key: "actions",
       header: "",
@@ -98,9 +99,13 @@ export default function PresupuestosPage() {
           </button>
           {editable && (
             <>
-              {p.estado !== "aprobado" && (
+              {p.estado !== "aprobado" ? (
                 <button onClick={() => aprobar(p)} className="rounded-lg p-1.5 text-content-muted transition hover:bg-spectrum-green/15 hover:text-spectrum-green" title="Aprobar y generar orden">
                   <Icon name="check" size={16} />
+                </button>
+              ) : (
+                <button onClick={() => updatePresupuesto({ ...p, estado: "enviado" })} className="rounded-lg p-1.5 text-spectrum-green transition hover:bg-spectrum-orange/15 hover:text-spectrum-orange" title="Desaprobar (volver a Enviado)">
+                  <Icon name="x" size={16} />
                 </button>
               )}
               <Link href={`/presupuestos/${p.id}/editar`} className="rounded-lg p-1.5 text-content-muted transition hover:bg-brand/15 hover:text-brand" title="Editar">

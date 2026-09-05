@@ -40,6 +40,7 @@ export default function PagosPage() {
     empleadoId: empleados[0]?.id ?? "",
     ordenId: ordenes[0]?.id ?? "",
     etapa: "relevamiento",
+    concepto: "",
     monto: 0,
     estado: "pendiente",
     fecha: null,
@@ -61,7 +62,7 @@ export default function PagosPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapa: "relevamiento", monto: 0, estado: "pendiente", fecha: null });
+    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapa: "relevamiento", concepto: "", monto: 0, estado: "pendiente", fecha: null });
     setModal(true);
   };
   const openEdit = (p: PagoEmpleado) => { setEditing(p); const { id, ...rest } = p; setForm(rest); setModal(true); };
@@ -74,8 +75,17 @@ export default function PagosPage() {
 
   const columns: Column<PagoEmpleado>[] = [
     { key: "emp", header: "Empleado", render: (p) => <span className="font-medium">{empName(p.empleadoId)}</span> },
-    { key: "presupuesto", header: "Presupuesto", hideOnMobile: true, render: (p) => <span className="text-content-muted">{presupuestoDeOrden(p.ordenId)}</span> },
-    { key: "etapa", header: "Etapa", render: (p) => <span className="text-content-muted">{etapaPagoLabel(p.etapa)}</span> },
+    { key: "presupuesto", header: "Presupuesto / Concepto", hideOnMobile: true, render: (p) => <span className="text-content-muted">{p.ordenId ? presupuestoDeOrden(p.ordenId) : (p.concepto || "Gasto general")}</span> },
+    {
+      key: "etapa",
+      header: "Etapa",
+      render: (p) => (
+        <div>
+          <span className="text-content-muted">{etapaPagoLabel(p.etapa)}</span>
+          {p.concepto && <p className="text-xs text-content-subtle">{p.concepto}</p>}
+        </div>
+      ),
+    },
     { key: "monto", header: "Monto", className: "text-right", render: (p) => <span className="font-medium tabular-nums">{formatCurrency(p.monto)}</span> },
     {
       key: "estado",
@@ -142,8 +152,9 @@ export default function PagosPage() {
               {empleados.map((e) => (<option key={e.id} value={e.id}>{e.nombre}</option>))}
             </Select>
           </Field>
-          <Field label="Presupuesto">
-            <Select value={form.ordenId} onChange={(e) => setForm({ ...form, ordenId: e.target.value })}>
+          <Field label="Presupuesto / orden" hint="Elegí 'Sin orden' para nafta u otros gastos">
+            <Select value={form.ordenId} onChange={(e) => setForm({ ...form, ordenId: e.target.value, etapa: e.target.value ? form.etapa : "otros" })}>
+              <option value="">Sin orden (gasto general)</option>
               {ordenes.map((o) => (<option key={o.id} value={o.id}>{presupuestoDeOrden(o.id)}</option>))}
             </Select>
           </Field>
@@ -152,6 +163,9 @@ export default function PagosPage() {
               {etapaOrder.map((k) => (<option key={k} value={k}>{etapaPagoLabel(k)}</option>))}
               <option value="otros">Otros</option>
             </Select>
+          </Field>
+          <Field label="Concepto" className="sm:col-span-2" hint="Ej. Nafta, peaje, viáticos… (opcional)">
+            <TextInput value={form.concepto} onChange={(e) => setForm({ ...form, concepto: e.target.value })} placeholder="Nafta" />
           </Field>
           <Field label="Monto">
             <TextInput type="number" min={0} value={form.monto} onChange={(e) => setForm({ ...form, monto: Number(e.target.value) })} />

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import * as mock from "@/lib/mock-data";
 import { StoreCtx, useStore, type StoreValue } from "./store-context";
 import type {
+  AgendaNota,
   Cliente,
   Cobro,
   Costo,
@@ -49,6 +50,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const empleados = useCollection<Empleado>(mock.empleados);
   const pagos = useCollection<PagoEmpleado>(mock.pagosEmpleados);
   const cobros = useCollection<Cobro>(mock.cobros);
+  const notas = useCollection<AgendaNota>(mock.notasAgenda);
 
   const [permissions, setPermissions] = useState<PermissionMatrix>(() => clone(mock.permissionMatrix));
   const [settings, setSettings] = useState(() => clone(mock.appSettings));
@@ -131,6 +133,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       empleados: empleados.items,
       pagosEmpleados: pagos.items,
       cobros: cobros.items,
+      notasAgenda: notas.items,
       addUser: users.add, updateUser: users.update, removeUser: users.remove,
       addCliente: clientes.add, updateCliente: clientes.update, removeCliente: clientes.remove,
       addDestino: destinos.add, updateDestino: destinos.update, removeDestino: destinos.remove,
@@ -141,9 +144,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addEmpleado: empleados.add, updateEmpleado: empleados.update, removeEmpleado: empleados.remove,
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
+      addNota: notas.add, updateNota: notas.update, removeNota: notas.remove,
     }),
     [currentUser, login, logout, setRole, permissions, setPermission, can, settings,
-      users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
+      users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros, notas]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

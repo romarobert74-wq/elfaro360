@@ -1,4 +1,5 @@
 import type {
+  AgendaNota,
   AppSettings,
   Cliente,
   Cobro,
@@ -354,6 +355,7 @@ export const presupuestos: Presupuesto[] = [
       manoObra: 60000,
       manoObraOverride: null,
       estructura: 18000,
+      estructuraOverride: null,
       trasladoAuto: 55000,
       trasladoOverride: null,
       garantiaPct: 5,
@@ -382,6 +384,7 @@ export const presupuestos: Presupuesto[] = [
       manoObra: 33000,
       manoObraOverride: null,
       estructura: 18000,
+      estructuraOverride: null,
       trasladoAuto: 30000,
       trasladoOverride: null,
       garantiaPct: 5,
@@ -411,6 +414,7 @@ export const presupuestos: Presupuesto[] = [
       manoObra: 70000,
       manoObraOverride: null,
       estructura: 18000,
+      estructuraOverride: null,
       trasladoAuto: 0,
       trasladoOverride: 90000,
       garantiaPct: 5,
@@ -436,11 +440,11 @@ export const ordenes: OrdenTrabajo[] = [
     destinoId: "des-2",
     fechaCreacion: "2026-07-12",
     etapas: [
-      { key: "aprobado", empleadoId: "emp-1", fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
-      { key: "relevamiento", empleadoId: "emp-1", fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
-      { key: "edicion", empleadoId: "emp-2", fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
-      { key: "publicacion", empleadoId: "emp-2", fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "entregable", empleadoId: null, fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
+      { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
+      { key: "edicion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
+      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
   {
@@ -451,22 +455,22 @@ export const ordenes: OrdenTrabajo[] = [
     destinoId: "des-1",
     fechaCreacion: "2026-07-24",
     etapas: [
-      { key: "aprobado", empleadoId: "emp-1", fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
-      { key: "relevamiento", empleadoId: "emp-1", fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "edicion", empleadoId: "emp-3", fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "publicacion", empleadoId: "emp-2", fechaEstimada: "2026-08-14", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "entregable", empleadoId: null, fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
+      { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "edicion", empleadoIds: ["emp-3"], fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-14", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
 ];
 
 // ---------- Pagos a empleados ----------
 export const pagosEmpleados: PagoEmpleado[] = [
-  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapa: "aprobado", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
-  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapa: "relevamiento", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
-  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapa: "edicion", monto: 26000, estado: "pendiente", fecha: null },
-  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapa: "aprobado", monto: 8000, estado: "pendiente", fecha: null },
-  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapa: "edicion", monto: 20000, estado: "pendiente", fecha: null },
+  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapa: "aprobado", concepto: "", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
+  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapa: "relevamiento", concepto: "", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
+  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapa: "edicion", concepto: "", monto: 26000, estado: "pendiente", fecha: null },
+  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapa: "aprobado", concepto: "", monto: 8000, estado: "pendiente", fecha: null },
+  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapa: "edicion", concepto: "", monto: 20000, estado: "pendiente", fecha: null },
 ];
 
 // ---------- Cobros ----------
@@ -474,3 +478,6 @@ export const cobros: Cobro[] = [
   { id: "cob-1", presupuestoId: "pre-1", clienteId: "cli-2", metodo: "transferencia", importe: 280000, estado: "cobrado", fecha: "2026-07-15" },
   { id: "cob-2", presupuestoId: "pre-2", clienteId: "cli-1", metodo: "efectivo", importe: 160000, estado: "pendiente", fecha: null },
 ];
+
+// ---------- Notas / tareas de agenda ----------
+export const notasAgenda: AgendaNota[] = [];

@@ -130,7 +130,8 @@ export interface PresupuestoItem {
 export interface PresupuestoConfig {
   manoObra: number; // auto = suma de costos internos de los servicios (editable)
   manoObraOverride: number | null; // si se edita a mano
-  estructura: number;
+  estructura: number; // auto = costos fijos / días laborales (valor calculado)
+  estructuraOverride: number | null; // si se edita a mano
   trasladoAuto: number; // costo de la zona según distancia
   trasladoOverride: number | null;
   garantiaPct: number;
@@ -167,7 +168,7 @@ export type EstadoEtapa = "pendiente" | "en_curso" | "completado";
 
 export interface Etapa {
   key: EtapaKey;
-  empleadoId: string | null;
+  empleadoIds: string[]; // uno o varios responsables
   fechaEstimada: string | null;
   fechaReal: string | null;
   estado: EstadoEtapa;
@@ -203,11 +204,21 @@ export type EtapaPago = EtapaKey | "otros";
 export interface PagoEmpleado {
   id: string;
   empleadoId: string;
-  ordenId: string; // orden asociada (su presupuesto se muestra como referencia)
+  ordenId: string; // "" si es un gasto general (nafta, etc.) sin orden
   etapa: EtapaPago;
+  concepto: string; // ej. "Nafta", "Peaje" — descripción libre del pago
   monto: number;
   estado: EstadoPago;
   fecha: string | null; // fecha de pago
+}
+
+// ===== Agenda: notas / tareas manuales =====
+export interface AgendaNota {
+  id: string;
+  fecha: string; // YYYY-MM-DD
+  titulo: string;
+  nota: string;
+  empleadoId: string | null;
 }
 
 // ===== Configuración (settings editables) =====

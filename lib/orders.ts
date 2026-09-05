@@ -2,10 +2,29 @@ import { etapaOrder } from "./labels";
 import { uid } from "./format";
 import type { Etapa, OrdenTrabajo, Presupuesto } from "./types";
 
+/**
+ * Migra órdenes con formato viejo (etapa.empleadoId único) al nuevo
+ * (etapa.empleadoIds[]). Idempotente y seguro ante datos incompletos.
+ */
+export function normalizeOrden(o: OrdenTrabajo): OrdenTrabajo {
+  return {
+    ...o,
+    etapas: (o.etapas ?? []).map((e) => {
+      const legacy = e as Etapa & { empleadoId?: string | null };
+      const empleadoIds = Array.isArray(e.empleadoIds)
+        ? e.empleadoIds
+        : legacy.empleadoId
+          ? [legacy.empleadoId]
+          : [];
+      return { ...e, empleadoIds };
+    }),
+  };
+}
+
 function etapasVacias(): Etapa[] {
   return etapaOrder.map((key) => ({
     key,
-    empleadoId: null,
+    empleadoIds: [],
     fechaEstimada: null,
     fechaReal: null,
     estado: "pendiente",

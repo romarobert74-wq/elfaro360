@@ -54,12 +54,13 @@ export default function DashboardPage() {
 
   // Próximas etapas (empleado: solo las suyas)
   const proximas = useMemo(() => {
-    const rows: { numero: string; etapa: EtapaKey; fecha: string; empleadoId: string | null; cliente: string }[] = [];
+    const rows: { numero: string; etapa: EtapaKey; fecha: string; responsables: string; cliente: string }[] = [];
     ordenes.forEach((o) => {
       o.etapas.forEach((e) => {
         if (e.estado !== "completado" && e.fechaEstimada) {
-          if (isEmpleado && e.empleadoId !== myEmpId) return;
-          rows.push({ numero: o.numero, etapa: e.key, fecha: e.fechaEstimada, empleadoId: e.empleadoId, cliente: clienteName(o.clienteId) });
+          if (isEmpleado && !(myEmpId && e.empleadoIds.includes(myEmpId))) return;
+          const responsables = e.empleadoIds.map((id) => empName(id)).filter(Boolean).join(", ") || "Sin asignar";
+          rows.push({ numero: o.numero, etapa: e.key, fecha: e.fechaEstimada, responsables, cliente: clienteName(o.clienteId) });
         }
       });
     });
@@ -77,7 +78,7 @@ export default function DashboardPage() {
           <StatCard label="Mis pagos pendientes" value={formatCurrency(misPendientes)} icon="pagos" tone="orange" />
           <StatCard label="Mis próximas etapas" value={String(proximas.length)} icon="agenda" tone="violet" />
         </div>
-        <ProximasCard proximas={proximas} empName={empName} />
+        <ProximasCard proximas={proximas} />
       </Guard>
     );
   }
@@ -108,7 +109,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-6">
-        <ProximasCard proximas={proximas} empName={empName} />
+        <ProximasCard proximas={proximas} />
       </div>
     </Guard>
   );
@@ -116,10 +117,8 @@ export default function DashboardPage() {
 
 function ProximasCard({
   proximas,
-  empName,
 }: {
-  proximas: { numero: string; etapa: EtapaKey; fecha: string; empleadoId: string | null; cliente: string }[];
-  empName: (id: string | null) => string;
+  proximas: { numero: string; etapa: EtapaKey; fecha: string; responsables: string; cliente: string }[];
 }) {
   return (
     <div className="card">
@@ -139,7 +138,7 @@ function ProximasCard({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{p.cliente}</p>
-              <p className="truncate text-xs text-content-subtle">{p.numero} · {empName(p.empleadoId)}</p>
+              <p className="truncate text-xs text-content-subtle">{p.numero} · {p.responsables}</p>
             </div>
             <Badge tone={etapaTone[p.etapa]} dot>{etapaLabels[p.etapa]}</Badge>
           </div>

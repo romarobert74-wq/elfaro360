@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/Field";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { MonthYearFilter, matchPeriod, type PeriodValue } from "@/components/ui/MonthYearFilter";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
@@ -25,7 +26,7 @@ import type { Etapa, EstadoEtapa, OrdenTrabajo } from "@/lib/types";
 
 export default function OrdenesPage() {
   const store = useStore();
-  const { ordenes, clientes, destinos, empleados, presupuestos, currentUser, updateOrden, addOrden, can } = store;
+  const { ordenes, clientes, destinos, empleados, presupuestos, currentUser, updateOrden, addOrden, removeOrden, can } = store;
   const editable = can("ordenes", "edit");
   const isEmpleado = currentUser?.role === "empleado";
   const [open, setOpen] = useState<OrdenTrabajo | null>(null);
@@ -73,7 +74,8 @@ export default function OrdenesPage() {
   const visibles = useMemo(() => {
     let rows = ordenes;
     if (isEmpleado && currentUser?.empleadoId) {
-      rows = rows.filter((o) => o.etapas.some((e) => e.empleadoId === currentUser.empleadoId));
+      const me = currentUser.empleadoId;
+      rows = rows.filter((o) => o.etapas.some((e) => e.empleadoIds.includes(me)));
     }
     return rows.filter((o) => matchPeriod(o.fechaCreacion, period));
   }, [ordenes, isEmpleado, currentUser, period]);
@@ -133,7 +135,7 @@ export default function OrdenesPage() {
                   const color = toneHex[etapaTone[key]];
                   const done = etapa.estado === "completado";
                   const active = etapa.estado === "en_curso";
-                  const mine = isEmpleado && etapa.empleadoId === currentUser?.empleadoId;
+                  const mine = isEmpleado && !!currentUser?.empleadoId && etapa.empleadoIds.includes(currentUser.empleadoId);
                   return (
                     <div key={key} className="flex flex-1 items-center gap-1">
                       <div className="flex-1">
@@ -167,10 +169,10 @@ export default function OrdenesPage() {
           onClose={() => setOpen(null)}
           editable={editable}
           empleadosOptions={empleados.map((e) => ({ id: e.id, nombre: e.nombre }))}
-          empName={empName}
           clienteName={clienteName(open.clienteId)}
           destinoName={destinoName(open.destinoId)}
           onSave={(next) => { updateOrden(next); setOpen(next); }}
+          onDelete={() => { removeOrden(open.id); setOpen(null); }}
         />
       )}
 
@@ -240,24 +242,34 @@ function OrdenDetalle({
   onClose,
   editable,
   empleadosOptions,
-  empName,
   clienteName,
   destinoName,
   onSave,
+  onDelete,
 }: {
   orden: OrdenTrabajo;
   onClose: () => void;
   editable: boolean;
   empleadosOptions: { id: string; nombre: string }[];
-  empName: (id: string | null) => string | null;
   clienteName: string;
   destinoName: string;
   onSave: (o: OrdenTrabajo) => void;
+  onDelete: () => void;
 }) {
   const [etapas, setEtapas] = useState<Etapa[]>(orden.etapas);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const update = (idx: number, patch: Partial<Etapa>) =>
     setEtapas((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
+
+  const toggleResponsable = (idx: number, empId: string) =>
+    setEtapas((prev) =>
+      prev.map((e, i) =>
+        i === idx
+          ? { ...e, empleadoIds: e.empleadoIds.includes(empId) ? e.empleadoIds.filter((x) => x !== empId) : [...e.empleadoIds, empId] }
+          : e
+      )
+    );
 
   const save = () => {
     onSave({ ...orden, etapas });
@@ -274,6 +286,9 @@ function OrdenDetalle({
       footer={
         editable ? (
           <>
+            <button className="btn-danger mr-auto" onClick={() => setConfirmDel(true)}>
+              <Icon name="trash" size={16} /> Eliminar
+            </button>
             <button className="btn-ghost" onClick={onClose}>Cancelar</button>
             <button className="btn-primary" onClick={save}>Guardar cambios</button>
           </>
@@ -292,30 +307,43 @@ function OrdenDetalle({
               </div>
               <Badge tone={estadoEtapaTone[etapa.estado]} dot>{estadoEtapaLabels[etapa.estado]}</Badge>
             </div>
+
+            {/* Responsables (uno o varios) */}
+            <div className="mb-3">
+              <p className="label">Responsables</p>
+              <div className="flex flex-wrap gap-1.5">
+                {empleadosOptions.map((o) => {
+                  const sel = etapa.empleadoIds.includes(o.id);
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      disabled={!editable}
+                      onClick={() => toggleResponsable(idx, o.id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-medium transition",
+                        sel ? "border-brand bg-brand/15 text-brand" : "border-line text-content-muted hover:border-brand/40",
+                        !editable && "cursor-not-allowed opacity-70"
+                      )}
+                    >
+                      {sel && <Icon name="check" size={11} className="mr-1 inline" />}
+                      {o.nombre}
+                    </button>
+                  );
+                })}
+                {empleadosOptions.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
+              </div>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Responsable">
-                <Select
-                  value={etapa.empleadoId ?? ""}
-                  disabled={!editable}
-                  onChange={(e) => update(idx, { empleadoId: e.target.value || null })}
-                >
-                  <option value="">Sin asignar</option>
-                  {empleadosOptions.map((o) => (
-                    <option key={o.id} value={o.id}>{o.nombre}</option>
-                  ))}
-                </Select>
-              </Field>
               <Field label="Estado">
-                <Select
-                  value={etapa.estado}
-                  disabled={!editable}
-                  onChange={(e) => update(idx, { estado: e.target.value as EstadoEtapa })}
-                >
+                <Select value={etapa.estado} disabled={!editable} onChange={(e) => update(idx, { estado: e.target.value as EstadoEtapa })}>
                   <option value="pendiente">Pendiente</option>
                   <option value="en_curso">En curso</option>
                   <option value="completado">Completado</option>
                 </Select>
               </Field>
+              <div />
               <Field label="Fecha estimada">
                 <TextInput type="date" disabled={!editable} value={etapa.fechaEstimada ?? ""} onChange={(e) => update(idx, { fechaEstimada: e.target.value || null })} />
               </Field>
@@ -329,6 +357,13 @@ function OrdenDetalle({
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={confirmDel}
+        onClose={() => setConfirmDel(false)}
+        onConfirm={onDelete}
+        message={`¿Eliminar la orden ${orden.numero}? Esta acción no se puede deshacer.`}
+      />
     </Modal>
   );
 }

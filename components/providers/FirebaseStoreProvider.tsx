@@ -12,6 +12,7 @@ import {
 import { StoreCtx, useStore, type StoreValue } from "./store-context";
 import * as mock from "@/lib/mock-data";
 import { getFirebase } from "@/lib/firebase";
+import { normalizeOrden } from "@/lib/orders";
 import {
   deleteDocById,
   fetchCollection,
@@ -23,6 +24,7 @@ import {
   type CollectionName,
 } from "@/lib/firestore";
 import type {
+  AgendaNota,
   Cliente,
   Cobro,
   Costo,
@@ -73,6 +75,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
   const empleados = useFsCollection<Empleado>("empleados");
   const pagos = useFsCollection<PagoEmpleado>("pagosEmpleados");
   const cobros = useFsCollection<Cobro>("cobros");
+  const notas = useFsCollection<AgendaNota>("notasAgenda");
 
   const [permissions, setPermissions] = useState<PermissionMatrix>(() => clone(mock.permissionMatrix));
   const [settings, setSettingsState] = useState(() => clone(mock.appSettings));
@@ -92,7 +95,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [u, cl, de, se, co, pr, or, em, pa, cb, perms, sett] = await Promise.all([
+      const [u, cl, de, se, co, pr, or, em, pa, cb, nt, perms, sett] = await Promise.all([
         fetchCollection<User>("users"),
         fetchCollection<Cliente>("clientes"),
         fetchCollection<Destino>("destinos"),
@@ -103,6 +106,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
         fetchCollection<Empleado>("empleados"),
         fetchCollection<PagoEmpleado>("pagosEmpleados"),
         fetchCollection<Cobro>("cobros"),
+        fetchCollection<AgendaNota>("notasAgenda"),
         fetchPermissions(),
         fetchSettings(),
       ]);
@@ -113,10 +117,11 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       servicios.setItems(se);
       costos.setItems(co);
       presupuestos.setItems(pr);
-      ordenes.setItems(or);
+      ordenes.setItems(or.map(normalizeOrden));
       empleados.setItems(em);
       pagos.setItems(pa);
       cobros.setItems(cb);
+      notas.setItems(nt);
       if (perms) setPermissions(perms);
       if (sett) setSettingsState(sett);
       setDataReady(true);
@@ -246,6 +251,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       empleados: empleados.items,
       pagosEmpleados: pagos.items,
       cobros: cobros.items,
+      notasAgenda: notas.items,
       addUser: users.add, updateUser: users.update, removeUser: users.remove,
       addCliente: clientes.add, updateCliente: clientes.update, removeCliente: clientes.remove,
       addDestino: destinos.add, updateDestino: destinos.update, removeDestino: destinos.remove,
@@ -256,9 +262,10 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       addEmpleado: empleados.add, updateEmpleado: empleados.update, removeEmpleado: empleados.remove,
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
+      addNota: notas.add, updateNota: notas.update, removeNota: notas.remove,
     }),
     [loading, currentUser, login, loginWithEmail, loginWithGoogle, logout, setRole, authError, permissions, setPermission, can, settings, updateSettings,
-      users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros]
+      users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros, notas]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

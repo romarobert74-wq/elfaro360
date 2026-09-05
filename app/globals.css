@@ -101,6 +101,15 @@
 
 /* ===== Print (Vista Cliente del presupuesto) ===== */
 @media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
   body * {
     visibility: hidden;
   }
@@ -108,11 +117,32 @@
   .print-area * {
     visibility: visible;
   }
+  /* Neutralizar los contenedores del modal para que el documento
+     quede anclado al borde superior de la hoja (sin espacio en blanco) */
+  [data-modal-container] {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+  [data-modal-panel] {
+    position: static !important;
+    transform: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
   .print-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    margin: 0 !important;
     background: white !important;
     color: black !important;
   }
