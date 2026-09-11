@@ -1,0 +1,97 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║   KIT WEBFRAMES  —  EL FARO 360  (versión autocontenida, sin sistema)  ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+Estos archivos NO dependen de ningún sistema, base de datos ni Vercel.
+Cada tour es autocontenido: se configura con un solo archivo (config.json)
+y funciona en cualquier hosting (o incluso entregado en un pendrive).
+
+────────────────────────────────────────────────────────────────────────
+ARCHIVOS DEL KIT
+────────────────────────────────────────────────────────────────────────
+  editor.html   → EDITOR VISUAL: cargás los datos y te genera el config.json
+                  (abrilo con doble clic en tu navegador; no necesita internet)
+  ficha.html    → tarjeta de información del lugar (fotos, contacto, WhatsApp)
+  ir-a.html     → botonera "Ir a" para saltar entre panoramas por NOMBRE
+  puente.js     → código que se pega UNA vez en el tour 3DVista
+  config.json   → LOS DATOS de este tour (lo genera el editor)
+  assets/       → poné acá el logo, la portada y las fotos del lugar
+
+────────────────────────────────────────────────────────────────────────
+FORMA FÁCIL: usar el EDITOR
+────────────────────────────────────────────────────────────────────────
+1) Abrí editor.html (doble clic).
+2) Completá la ficha, agregá las fotos (por nombre) y armá la botonera
+   (cada lugar/panorama, con grupos y submenús si querés).
+3) Botón "Descargar config.json" → lo guardás en la carpeta del tour.
+4) Copiá tus imágenes reales a la carpeta assets/.
+   (Para editar un tour ya hecho: botón "Cargar config.json" arriba.)
+
+────────────────────────────────────────────────────────────────────────
+CÓMO SE ARMA UN TOUR (paso a paso)
+────────────────────────────────────────────────────────────────────────
+1) Copiá esta carpeta completa DENTRO de la carpeta del tour 3DVista
+   (donde está el index.htm del tour). Debe quedar así:
+
+     mi-tour/
+     ├── index.htm          (tu tour 3DVista)
+     ├── ficha.html
+     ├── ir-a.html
+     ├── puente.js
+     ├── config.json
+     └── assets/  (logo.png, portada.jpg, foto1.jpg, ...)
+
+2) Editá config.json con los datos del lugar (ver abajo).
+   Poné las imágenes reales en la carpeta assets/.
+
+3) En 3DVista:
+   a. NOMBRES DE PANORAMAS: a cada panorama ponele un label simple y sin
+      acentos (recepcion, piscina, hab-doble...). Ese mismo texto va en el
+      campo "panorama" del config.json.
+
+   b. PUENTE: seleccioná el TOUR → evento "Al comenzar / Begin" →
+      acción "Ejecutar JavaScript" → pegá TODO el contenido de puente.js.
+
+   c. BOTÓN "IR A": agregá un WebFrame que apunte a  ir-a.html
+      (ruta relativa, misma carpeta). Metelo dentro de un Container llamado
+      BOTONERA-PPAL. El botón "Ir a" del skin muestra ese contenedor; al
+      tocar una opción, la botonera se cierra sola.
+
+   d. FICHA: agregá otro WebFrame que apunte a  ficha.html  (donde quieras
+      mostrar la info del lugar).
+
+4) Publicá el tour en cualquier hosting. ¡Listo!
+
+   IMPORTANTE: los webframes leen config.json con fetch, así que el tour
+   tiene que estar servido por un servidor web (hosting). Abierto como
+   archivo local (file://) el navegador bloquea la lectura del JSON.
+
+────────────────────────────────────────────────────────────────────────
+CONFIG.JSON — CAMPOS
+────────────────────────────────────────────────────────────────────────
+  tour.nombre       nombre del lugar
+  tour.categoria    hotel | bodega | restaurante | alojamiento | salon |
+                    servicio | eventos | tecnologia | transporte | viajes
+  tour.color        color del acento en #hexadecimal (aros, rollover, badge)
+
+  contacto.whatsapp   número con código de país, solo dígitos (549261...)
+  contacto.web / instagram / email / direccion / ubicacionUrl
+
+  textos.infoGeneral  descripción del lugar
+
+  logoUrl, portada    rutas a imágenes (ej: assets/logo.png)
+  fotos[]             galería (rutas a imágenes)
+
+  botonera.mensajeWhatsapp   texto pre-cargado al abrir WhatsApp
+  botonera.botones[]         cada botón:
+     etiqueta    texto del botón
+     panorama    NOMBRE del panorama en 3DVista (debe coincidir)
+     icono       puerta|cama|pileta|copa|vinedo|cubiertos|spa|gimnasio|
+                 salon|galeria|terraza|tienda|pin|estrella|edificio|bus|
+                 valija|whatsapp|calendario
+     grupo       (opcional) agrupa botones en pestañas
+     tipo        "whatsapp" → botón verde que abre WhatsApp (sin panorama)
+     subbotones[] (opcional) despliega un submenú (etiqueta + panorama + icono)
+
+────────────────────────────────────────────────────────────────────────
+Cualquier duda, escribime. — El Faro 360

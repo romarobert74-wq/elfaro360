@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de Tours — El Faro 360</title>
+<style>
+  :root{ --bg:#0e0a0c; --panel:#171119; --panel2:#1e1620; --line:rgba(255,255,255,.12);
+    --txt:#f2e9e4; --muted:#a99e97; --acc:#ff6a3d; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--txt);
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header{ padding:16px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; background:rgba(14,10,12,.92); backdrop-filter:blur(10px); z-index:10; }
+  header h1{ font-size:18px; margin:0; font-weight:800; letter-spacing:-.01em; }
+  header .tag{ font-size:12px; color:var(--muted); }
+  header .sp{ flex:1; }
+  .layout{ display:grid; grid-template-columns:1fr 460px; gap:0; align-items:start; }
+  @media (max-width:980px){ .layout{ grid-template-columns:1fr; } .side{ position:static !important; } }
+  .form{ padding:22px; max-width:820px; }
+  .side{ position:sticky; top:69px; height:calc(100vh - 69px); overflow:auto; border-left:1px solid var(--line);
+    padding:22px; background:var(--panel); }
+  h2{ font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--acc); margin:26px 0 12px; }
+  h2:first-child{ margin-top:0; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 5px; text-transform:uppercase; letter-spacing:.04em; }
+  input,select,textarea{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--txt); font-size:14px; font-family:inherit; }
+  input:focus,select,textarea:focus{ outline:2px solid var(--acc); outline-offset:0; }
+  textarea{ min-height:80px; resize:vertical; }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .row3{ display:grid; grid-template-columns:1.4fr 1.4fr 1fr; gap:10px; }
+  .field{ margin-bottom:12px; }
+  .btn{ display:inline-flex; align-items:center; gap:7px; padding:10px 15px; border-radius:10px; cursor:pointer;
+    font-size:14px; font-weight:700; border:1px solid var(--line); background:var(--panel2); color:var(--txt); }
+  .btn:hover{ border-color:var(--acc); }
+  .btn.acc{ background:var(--acc); border:none; color:#1a0f0a; }
+  .btn.acc:hover{ filter:brightness(1.08); }
+  .btn.sm{ padding:6px 10px; font-size:12px; }
+  .btn.gh{ background:transparent; }
+  .boton{ border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--panel2); }
+  .boton .hd{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+  .boton .hd .grab{ color:var(--muted); font-size:12px; }
+  .boton .hd .sp{ flex:1; }
+  .sub{ margin:8px 0 0 16px; padding-left:12px; border-left:2px dashed var(--line); }
+  .subrow{ display:grid; grid-template-columns:1.3fr 1.3fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center; }
+  .muted{ color:var(--muted); font-size:12px; }
+  .chip{ display:inline-flex; align-items:center; gap:6px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:999px; padding:5px 10px; font-size:13px; margin:0 6px 6px 0; }
+  .chip button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0; }
+  .foto-item{ display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; margin-bottom:6px; font-size:13px; }
+  .foto-item .sp{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .foto-item button{ background:none; border:none; color:var(--muted); cursor:pointer; }
+  /* preview */
+  .pv{ border-radius:18px; padding:16px; background:rgba(20,15,17,.9); border:1px solid var(--line); margin-bottom:14px; }
+  .pv .t{ text-align:center; font-size:20px; font-weight:800; }
+  .pv .s{ text-align:center; font-size:12px; color:var(--muted); margin-bottom:12px; }
+  .pv .gtab{ display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; margin:0 5px 8px 0;
+    color:var(--pc); background:var(--pcbg); border:1px solid var(--pcbd); }
+  .pv .b{ display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:11px; margin-bottom:7px;
+    background:rgba(255,255,255,.05); border:1px solid var(--line); font-size:14px; font-weight:600; }
+  .pv .b .ic{ color:var(--pc); display:grid; place-items:center; }
+  .pv .b .ic svg{ width:18px; height:18px; }
+  .pv .b.wa{ background:linear-gradient(135deg,#25D366,#128C7E); color:#04120b; font-weight:800; justify-content:center; border:none; }
+  .jsonbox{ width:100%; min-height:180px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .ok{ color:#4ade80; } .hint{ font-size:12px; color:var(--muted); margin-top:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗼 Editor de Tours — El Faro 360</h1>
+  <span class="tag">genera el config.json de tu tour</span>
+  <span class="sp"></span>
+  <a href="faro360-kit.zip" download class="btn sm acc" style="text-decoration:none">⬇ Descargar kit completo</a>
+  <label style="margin:0;cursor:pointer" class="btn sm gh">Cargar config.json
+    <input id="cargar" type="file" accept="application/json" style="display:none">
+  </label>
+</header>
+
+<div class="layout">
+  <!-- ===== FORM ===== -->
+  <div class="form">
+    <h2>Datos del lugar (ficha)</h2>
+    <div class="card">
+      <div class="row">
+        <div><label>Nombre del lugar</label><input id="nombre" placeholder="Hotel Ejemplo"></div>
+        <div><label>Categoría</label><select id="categoria"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Color de acento</label><input id="color" type="color" value="#3b82f6" style="height:42px;padding:4px"></div>
+        <div><label>WhatsApp (con código país)</label><input id="whatsapp" placeholder="5492610000000"></div>
+      </div>
+      <div class="field"><label>Descripción</label><textarea id="infoGeneral" placeholder="Contá qué es el lugar…"></textarea></div>
+      <div class="row">
+        <div><label>Sitio web</label><input id="web" placeholder="https://…"></div>
+        <div><label>Instagram</label><input id="instagram" placeholder="https://instagram.com/…"></div>
+      </div>
+      <div class="row">
+        <div><label>Email</label><input id="email" placeholder="reservas@…"></div>
+        <div><label>Dirección</label><input id="direccion" placeholder="Calle 123, Mendoza"></div>
+      </div>
+      <div class="field"><label>Link de ubicación (Google Maps)</label><input id="ubicacionUrl" placeholder="https://maps.google.com/…"></div>
+    </div>
+
+    <h2>Imágenes</h2>
+    <div class="card">
+      <div class="row">
+        <div><label>Logo (archivo en assets/)</label>
+          <input id="logoUrl" placeholder="assets/logo.png">
+          <div class="hint">o elegí el archivo: <input id="logoFile" type="file" accept="image/*" style="display:inline;width:auto;padding:4px;font-size:12px"></div>
+        </div>
+        <div><label>Portada (archivo en assets/)</label>
+          <input id="portada" placeholder="assets/portada.jpg">
+          <div class="hint">o elegí el archivo: <input id="portadaFile" type="file" accept="image/*" style="display:inline;width:auto;padding:4px;font-size:12px"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Galería de fotos</label>
+        <div id="fotosList"></div>
+        <div class="toolbar">
+          <label class="btn sm">+ Elegir fotos<input id="fotosFile" type="file" accept="image/*" multiple style="display:none"></label>
+          <button class="btn sm gh" id="fotoManual">+ Agregar por nombre</button>
+        </div>
+        <div class="hint">Las fotos deben copiarse a la carpeta <b>assets/</b> del tour. Acá solo se listan sus nombres.</div>
+      </div>
+    </div>
+
+    <h2>Botonera — lugares / panoramas</h2>
+    <div class="card">
+      <div class="field"><label>Mensaje de WhatsApp (pre-cargado)</label>
+        <input id="mensajeWhatsapp" placeholder="Hola! Vi el tour 360° y quiero reservar."></div>
+      <div id="botones"></div>
+      <div class="toolbar">
+        <button class="btn sm acc" id="addBtn">+ Agregar lugar</button>
+        <button class="btn sm" id="addWa">+ Botón WhatsApp</button>
+      </div>
+      <div class="hint">El campo <b>Panorama</b> debe coincidir con el NOMBRE del panorama en 3DVista (sin acentos).
+        Poné un <b>Grupo</b> para agrupar en pestañas (ej: General, Habitaciones). Dejá <b>Panorama</b> vacío y agregá subbotones para hacer un submenú.</div>
+    </div>
+  </div>
+
+  <!-- ===== SIDE: PREVIEW + EXPORT ===== -->
+  <div class="side">
+    <h2>Vista previa de la botonera</h2>
+    <div class="pv" id="preview"></div>
+
+    <h2>config.json</h2>
+    <textarea id="jsonbox" class="jsonbox" readonly></textarea>
+    <div class="toolbar">
+      <button class="btn acc" id="descargar">⬇ Descargar config.json</button>
+      <button class="btn" id="copiar">Copiar</button>
+      <span id="copiado" class="ok" style="align-self:center;display:none">¡Copiado!</span>
+    </div>
+    <div class="hint">Descargá el archivo y copialo a la carpeta del tour (junto a ficha.html, ir-a.html y puente.js).</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  // ---- Íconos (mismo set que ir-a.html) ----
+  var P={
+    puerta:'<path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/>',
+    cama:'<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
+    pileta:'<path d="M2 12h20"/><path d="M5 12V6a2 2 0 0 1 2-2h3"/><path d="M19 12V6a2 2 0 0 0-2-2h-1"/><path d="M2 16c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/><path d="M2 20c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/>',
+    copa:'<path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-1-8H8c-.5 4-1 6-1 8a5 5 0 0 0 5 5Z"/>',
+    vinedo:'<path d="M22 5V2l-5.89 5.89"/><circle cx="16.6" cy="15.89" r="3"/><circle cx="8.11" cy="7.4" r="3"/><circle cx="12.35" cy="11.65" r="3"/><circle cx="13.91" cy="5.85" r="3"/><circle cx="18.15" cy="10.09" r="3"/><circle cx="6.56" cy="13.2" r="3"/><circle cx="10.8" cy="17.44" r="3"/><circle cx="5" cy="19" r="3"/>',
+    cubiertos:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 15v7"/>',
+    spa:'<path d="M12 22c1.25-1.25 2.5-2.5 3.5-4"/><path d="M12 22c-1.25-1.25-2.5-2.5-3.5-4"/><path d="M12 13a5 5 0 0 1 5-5c0 3-2 5-5 8-3-3-5-5-5-8a5 5 0 0 1 5 5Z"/>',
+    gimnasio:'<path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>',
+    salon:'<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L12 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
+    galeria:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    terraza:'<path d="M12 2v20"/><path d="M2 12h20"/><path d="M20 16a8 8 0 1 0-16 0"/>',
+    tienda:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+    pin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    estrella:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.79 21.01a.53.53 0 0 1-.771-.56l.882-5.139a2.12 2.12 0 0 0-.611-1.879L2.554 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/>',
+    edificio:'<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+    bus:'<path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>',
+    valija:'<path d="M6 20a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2"/><path d="M8 18V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14"/><path d="M10 20h4"/><circle cx="16" cy="20" r="2"/><circle cx="8" cy="20" r="2"/>',
+    whatsapp:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    calendario:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
+  };
+  var ICON_NAMES=Object.keys(P);
+  function svg(n){ return P[n]? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>':''; }
+
+  var CATS={ hotel:['Hotel','#3b82f6'], bodega:['Bodega','#a855f7'], restaurante:['Restaurante','#f15a24'],
+    alojamiento:['Alojamiento','#22c55e'], salon:['Salón de Eventos','#ec4899'], servicio:['Servicio','#eab308'],
+    eventos:['Congresos y Eventos','#06b6d4'], tecnologia:['Tecnología y Audiovisual','#6366f1'],
+    transporte:['Transporte y Logística','#ef4444'], viajes:['Viajes y Turismo','#14b8a6'] };
+
+  function rgba(hex,a){ var h=(hex||'#ff6a3d').replace('#',''); if(h.length===3)h=h.split('').map(function(c){return c+c;}).join(''); var n=parseInt(h,16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // ---- Estado ----
+  var data={ tour:{nombre:'',categoria:'hotel',color:'#3b82f6'},
+    contacto:{whatsapp:'',web:'',instagram:'',email:'',direccion:'',ubicacionUrl:''},
+    textos:{infoGeneral:''}, logoUrl:'', portada:'', fotos:[],
+    botonera:{mensajeWhatsapp:'',botones:[]} };
+
+  // ---- Poblar select categoría ----
+  var selCat=$('categoria');
+  Object.keys(CATS).forEach(function(k){ var o=document.createElement('option'); o.value=k; o.textContent=CATS[k][0]; selCat.appendChild(o); });
+
+  // ---- Opciones de icono (para selects) ----
+  function iconOptions(sel){ return ICON_NAMES.map(function(n){ return '<option value="'+n+'"'+(n===sel?' selected':'')+'>'+n+'</option>'; }).join(''); }
+
+  // ---- Bind campos simples ----
+  function bind(id, path){ var el=$(id); el.addEventListener('input',function(){ setPath(path, el.value); sync(); }); }
+  function setPath(path,val){ var o=data,p=path.split('.'); for(var i=0;i<p.length-1;i++)o=o[p[i]]; o[p[p.length-1]]=val; }
+  bind('nombre','tour.nombre'); bind('color','tour.color');
+  bind('whatsapp','contacto.whatsapp'); bind('web','contacto.web'); bind('instagram','contacto.instagram');
+  bind('email','contacto.email'); bind('direccion','contacto.direccion'); bind('ubicacionUrl','contacto.ubicacionUrl');
+  bind('infoGeneral','textos.infoGeneral'); bind('logoUrl','logoUrl'); bind('portada','portada');
+  bind('mensajeWhatsapp','botonera.mensajeWhatsapp');
+
+  selCat.addEventListener('change',function(){ data.tour.categoria=selCat.value;
+    var col=CATS[selCat.value][1]; data.tour.color=col; $('color').value=col; sync(); });
+
+  // Archivos → toman el nombre y lo guardan como assets/<nombre>
+  $('logoFile').addEventListener('change',function(e){ if(e.target.files[0]){ data.logoUrl='assets/'+e.target.files[0].name; $('logoUrl').value=data.logoUrl; sync(); }});
+  $('portadaFile').addEventListener('change',function(e){ if(e.target.files[0]){ data.portada='assets/'+e.target.files[0].name; $('portada').value=data.portada; sync(); }});
+  $('fotosFile').addEventListener('change',function(e){ Array.prototype.forEach.call(e.target.files,function(f){ data.fotos.push('assets/'+f.name); }); renderFotos(); sync(); });
+  $('fotoManual').addEventListener('click',function(){ var n=prompt('Nombre del archivo (ej: foto5.jpg):'); if(n){ data.fotos.push(n.indexOf('/')>=0?n:'assets/'+n); renderFotos(); sync(); } });
+
+  function renderFotos(){ var c=$('fotosList'); c.innerHTML=''; data.fotos.forEach(function(f,i){
+    var d=document.createElement('div'); d.className='foto-item';
+    d.innerHTML='<span class="sp">🖼 '+esc(f)+'</span>';
+    var b=document.createElement('button'); b.textContent='✕'; b.title='Quitar';
+    b.onclick=function(){ data.fotos.splice(i,1); renderFotos(); sync(); };
+    d.appendChild(b); c.appendChild(d);
+  }); }
+
+  // ---- Editor de botones ----
+  function nuevoBoton(wa){ return wa? {etiqueta:'Reservar ahora',tipo:'whatsapp'} : {etiqueta:'',panorama:'',icono:'pin',grupo:''}; }
+  $('addBtn').addEventListener('click',function(){ data.botonera.botones.push(nuevoBoton(false)); renderBotones(); sync(); });
+  $('addWa').addEventListener('click',function(){ data.botonera.botones.push(nuevoBoton(true)); renderBotones(); sync(); });
+
+  function renderBotones(){
+    var c=$('botones'); c.innerHTML='';
+    data.botonera.botones.forEach(function(b,i){
+      var wrap=document.createElement('div'); wrap.className='boton';
+      var esWa=b.tipo==='whatsapp';
+      var html='<div class="hd"><span class="grab">≡ '+(i+1)+'</span><span class="sp"></span>';
+      html+='<button class="btn sm gh" data-up="'+i+'" title="Subir">▲</button>';
+      html+='<button class="btn sm gh" data-down="'+i+'" title="Bajar">▼</button>';
+      html+='<button class="btn sm gh" data-del="'+i+'" title="Eliminar">✕</button></div>';
+      if(esWa){
+        html+='<div class="row"><div><label>Etiqueta</label><input data-f="etiqueta" data-i="'+i+'" value="'+esc(b.etiqueta)+'"></div>'
+          +'<div><label>Tipo</label><input value="WhatsApp (botón verde)" disabled></div></div>';
+      } else {
+        html+='<div class="row3"><div><label>Etiqueta</label><input data-f="etiqueta" data-i="'+i+'" value="'+esc(b.etiqueta)+'" placeholder="Recepción"></div>'
+          +'<div><label>Panorama (nombre)</label><input data-f="panorama" data-i="'+i+'" value="'+esc(b.panorama||'')+'" placeholder="recepcion"></div>'
+          +'<div><label>Ícono</label><select data-f="icono" data-i="'+i+'">'+iconOptions(b.icono)+'</select></div></div>';
+        html+='<div class="row"><div><label>Grupo (pestaña, opcional)</label><input data-f="grupo" data-i="'+i+'" value="'+esc(b.grupo||'')+'" placeholder="General"></div>'
+          +'<div style="align-self:end"><button class="btn sm" data-sub="'+i+'">+ Subbotón (submenú)</button></div></div>';
+        if(b.subbotones && b.subbotones.length){
+          html+='<div class="sub" data-subwrap="'+i+'"><label>Subbotones</label>';
+          b.subbotones.forEach(function(s,j){
+            html+='<div class="subrow"><input data-sf="etiqueta" data-i="'+i+'" data-j="'+j+'" value="'+esc(s.etiqueta)+'" placeholder="Simple">'
+              +'<input data-sf="panorama" data-i="'+i+'" data-j="'+j+'" value="'+esc(s.panorama||'')+'" placeholder="hab-simple">'
+              +'<select data-sf="icono" data-i="'+i+'" data-j="'+j+'">'+iconOptions(s.icono||'cama')+'</select>'
+              +'<button class="btn sm gh" data-subdel="'+i+'" data-j="'+j+'">✕</button></div>';
+          });
+          html+='</div>';
+        }
+      }
+      wrap.innerHTML=html; c.appendChild(wrap);
+    });
+    // listeners
+    c.querySelectorAll('[data-f]').forEach(function(el){ el.addEventListener('input',function(){ data.botonera.botones[+el.dataset.i][el.dataset.f]=el.value; sync(); }); });
+    c.querySelectorAll('[data-sf]').forEach(function(el){ el.addEventListener('input',function(){ data.botonera.botones[+el.dataset.i].subbotones[+el.dataset.j][el.dataset.sf]=el.value; sync(); }); });
+    c.querySelectorAll('[data-del]').forEach(function(el){ el.onclick=function(){ data.botonera.botones.splice(+el.dataset.del,1); renderBotones(); sync(); }; });
+    c.querySelectorAll('[data-up]').forEach(function(el){ el.onclick=function(){ var i=+el.dataset.up; if(i>0){ var a=data.botonera.botones; var t=a[i]; a[i]=a[i-1]; a[i-1]=t; renderBotones(); sync(); } }; });
+    c.querySelectorAll('[data-down]').forEach(function(el){ el.onclick=function(){ var i=+el.dataset.down; var a=data.botonera.botones; if(i<a.length-1){ var t=a[i]; a[i]=a[i+1]; a[i+1]=t; renderBotones(); sync(); } }; });
+    c.querySelectorAll('[data-sub]').forEach(function(el){ el.onclick=function(){ var b=data.botonera.botones[+el.dataset.sub]; if(!b.subbotones)b.subbotones=[]; b.subbotones.push({etiqueta:'',panorama:'',icono:'cama'}); renderBotones(); sync(); }; });
+    c.querySelectorAll('[data-subdel]').forEach(function(el){ el.onclick=function(){ data.botonera.botones[+el.dataset.subdel].subbotones.splice(+el.dataset.j,1); renderBotones(); sync(); }; });
+  }
+
+  // ---- Vista previa botonera ----
+  function renderPreview(){
+    var pv=$('preview'), col=data.tour.color||'#ff6a3d';
+    pv.style.setProperty('--pc',col); pv.style.setProperty('--pcbg',rgba(col,.16)); pv.style.setProperty('--pcbd',rgba(col,.5));
+    var b=data.botonera.botones, grupos=[];
+    b.forEach(function(x){ var g=(x.grupo||'').trim(); if(g&&grupos.indexOf(g)<0)grupos.push(g); });
+    var html='<div class="t">'+(esc(data.tour.nombre)||'¿A dónde querés ir?')+'</div><div class="s">Elegí un lugar del recorrido</div>';
+    if(grupos.length>1) html+='<div>'+grupos.map(function(g){return '<span class="gtab">'+esc(g)+'</span>';}).join('')+'</div>';
+    if(!b.length){ html+='<div class="s">Todavía no agregaste botones.</div>'; }
+    b.forEach(function(x){
+      var wa=x.tipo==='whatsapp';
+      var ic=wa?'whatsapp':(x.icono||'pin');
+      var extra=(x.subbotones&&x.subbotones.length)?' ▸':'';
+      html+='<div class="b'+(wa?' wa':'')+'"><span class="ic">'+svg(ic)+'</span><span>'+(esc(x.etiqueta)||'(sin nombre)')+extra+'</span></div>';
+    });
+    pv.innerHTML=html;
+  }
+
+  // ---- JSON + sync ----
+  function limpio(){
+    // arma un objeto de salida sin campos vacíos molestos
+    var d=JSON.parse(JSON.stringify(data));
+    d.botonera.botones=d.botonera.botones.map(function(b){
+      var o={etiqueta:b.etiqueta};
+      if(b.tipo==='whatsapp'){ o.tipo='whatsapp'; return o; }
+      o.panorama=b.panorama||''; if(b.icono)o.icono=b.icono; if(b.grupo)o.grupo=b.grupo;
+      if(b.subbotones&&b.subbotones.length) o.subbotones=b.subbotones.map(function(s){ var so={etiqueta:s.etiqueta,panorama:s.panorama||''}; if(s.icono)so.icono=s.icono; return so; });
+      return o;
+    });
+    return d;
+  }
+  function sync(){ $('jsonbox').value=JSON.stringify(limpio(),null,2); renderPreview(); }
+
+  // ---- Descargar / copiar ----
+  $('descargar').addEventListener('click',function(){
+    var blob=new Blob([$('jsonbox').value],{type:'application/json'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='config.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  });
+  $('copiar').addEventListener('click',function(){ var t=$('jsonbox'); t.select();
+    try{ navigator.clipboard.writeText(t.value); }catch(e){ document.execCommand('copy'); }
+    var c=$('copiado'); c.style.display='inline'; setTimeout(function(){c.style.display='none';},1500);
+  });
+
+  // ---- Cargar config.json existente ----
+  $('cargar').addEventListener('change',function(e){ var f=e.target.files[0]; if(!f)return;
+    var rd=new FileReader(); rd.onload=function(){ try{
+      var d=JSON.parse(rd.result);
+      data={ tour:Object.assign({nombre:'',categoria:'hotel',color:'#3b82f6'},d.tour||{}),
+        contacto:Object.assign({whatsapp:'',web:'',instagram:'',email:'',direccion:'',ubicacionUrl:''},d.contacto||{}),
+        textos:Object.assign({infoGeneral:''},d.textos||{}),
+        logoUrl:d.logoUrl||'', portada:d.portada||'', fotos:d.fotos||[],
+        botonera:Object.assign({mensajeWhatsapp:'',botones:[]},d.botonera||{}) };
+      cargarFormulario();
+    }catch(err){ alert('No se pudo leer el config.json'); } };
+    rd.readAsText(f);
+  });
+
+  function cargarFormulario(){
+    $('nombre').value=data.tour.nombre; selCat.value=data.tour.categoria; $('color').value=data.tour.color;
+    $('whatsapp').value=data.contacto.whatsapp; $('web').value=data.contacto.web; $('instagram').value=data.contacto.instagram;
+    $('email').value=data.contacto.email; $('direccion').value=data.contacto.direccion; $('ubicacionUrl').value=data.contacto.ubicacionUrl;
+    $('infoGeneral').value=data.textos.infoGeneral; $('logoUrl').value=data.logoUrl; $('portada').value=data.portada;
+    $('mensajeWhatsapp').value=data.botonera.mensajeWhatsapp;
+    renderFotos(); renderBotones(); sync();
+  }
+
+  // ---- Inicio: un par de botones de ejemplo ----
+  data.botonera.botones=[ {etiqueta:'Recepción',panorama:'recepcion',icono:'puerta',grupo:'General'},
+    {etiqueta:'Reservar ahora',tipo:'whatsapp'} ];
+  cargarFormulario();
+})();
+</script>
+</body>
+</html>

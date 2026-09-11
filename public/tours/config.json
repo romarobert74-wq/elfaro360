@@ -1,0 +1,42 @@
+{
+  "tour": {
+    "nombre": "Hotel Ejemplo El Faro",
+    "categoria": "hotel",
+    "color": "#3b82f6"
+  },
+  "contacto": {
+    "whatsapp": "5492610000000",
+    "web": "https://www.ejemplo.com",
+    "instagram": "https://instagram.com/ejemplo",
+    "email": "reservas@ejemplo.com",
+    "direccion": "Av. San Martín 1234, Ciudad de Mendoza",
+    "ubicacionUrl": "https://maps.google.com/?q=-32.89,-68.84"
+  },
+  "textos": {
+    "infoGeneral": "Hotel boutique en el corazón de Mendoza. 40 habitaciones, restaurante de autor, spa y salón para eventos. Ideal para turismo de negocios y escapadas."
+  },
+  "logoUrl": "assets/logo.png",
+  "portada": "assets/portada.jpg",
+  "fotos": [
+    "assets/foto1.jpg",
+    "assets/foto2.jpg",
+    "assets/foto3.jpg",
+    "assets/foto4.jpg"
+  ],
+  "botonera": {
+    "mensajeWhatsapp": "Hola! Vi el tour 360° del Hotel Ejemplo y quiero hacer una reserva.",
+    "botones": [
+      { "etiqueta": "Recepción",  "panorama": "recepcion",  "icono": "puerta",    "grupo": "General" },
+      { "etiqueta": "Restaurante","panorama": "restaurante", "icono": "cubiertos", "grupo": "General" },
+      { "etiqueta": "Piscina",    "panorama": "piscina",     "icono": "pileta",    "grupo": "General" },
+      { "etiqueta": "Spa",        "panorama": "spa",         "icono": "spa",       "grupo": "General" },
+      { "etiqueta": "Habitaciones","icono": "cama", "grupo": "Habitaciones", "subbotones": [
+        { "etiqueta": "Simple", "panorama": "hab-simple", "icono": "cama" },
+        { "etiqueta": "Doble",  "panorama": "hab-doble",  "icono": "cama" },
+        { "etiqueta": "Suite",  "panorama": "hab-suite",  "icono": "estrella" }
+      ]},
+      { "etiqueta": "Salón de Eventos", "panorama": "salon", "icono": "salon", "grupo": "Habitaciones" },
+      { "etiqueta": "Reservar ahora", "tipo": "whatsapp" }
+    ]
+  }
+}

@@ -6,6 +6,8 @@ export interface NavItem {
   href: string;
   icon: string;
   group: "Principal" | "Comercial" | "Producción" | "Finanzas" | "Sistema";
+  // Abre en pestaña nueva (páginas estáticas fuera de las rutas del sistema, ej: editor de tours)
+  external?: boolean;
 }
 
 export const navItems: NavItem[] = [
@@ -26,6 +28,9 @@ export const navItems: NavItem[] = [
   { key: "reportes", label: "Reportes", href: "/reportes", icon: "reportes", group: "Finanzas" },
 
   { key: "configuracion", label: "Configuración", href: "/configuracion", icon: "config", group: "Sistema" },
+  // Editor de fichas y botoneras para tours propios (fuera del sistema). Abre en pestaña nueva.
+  // Reutiliza el permiso de "configuracion" para su visibilidad.
+  { key: "configuracion", label: "Ficha / Botones", href: "/tours/editor.html", icon: "edit", group: "Sistema", external: true },
   { key: "usuarios", label: "Usuarios y Roles", href: "/usuarios", icon: "usuarios", group: "Sistema" },
   { key: "permisos", label: "Permisos", href: "/configuracion/permisos", icon: "permisos", group: "Sistema" },
 ];

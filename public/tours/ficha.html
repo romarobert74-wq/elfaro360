@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha — El Faro 360</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:transparent; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap{ min-height:100vh; display:grid; place-items:center; padding:16px; }
+  .card{ width:min(620px,96vw); border-radius:24px; overflow:hidden;
+    background:rgba(20,15,17,.80); backdrop-filter:blur(22px);
+    border:1px solid rgba(255,255,255,.10); color:#f5ede7; box-shadow:0 24px 60px rgba(0,0,0,.45); }
+  .portada{ width:100%; aspect-ratio:16/7; object-fit:cover; display:block; background:#1a1113; }
+  .body{ padding:22px; }
+  .top{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+  .logo{ width:56px; height:56px; border-radius:14px; object-fit:cover; background:#241a1c; border:1px solid rgba(255,255,255,.12); }
+  .nombre{ font-size:24px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  .badge{ display:inline-block; margin-top:5px; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px;
+    color:var(--cat); background:var(--cat-bg); border:1px solid var(--cat-bd); }
+  .info{ font-size:15px; line-height:1.55; color:#e4d8d1; margin:8px 0 16px; white-space:pre-line; }
+  .dir{ display:flex; align-items:flex-start; gap:8px; font-size:14px; color:#c9bcb4; margin-bottom:16px; }
+  .dir svg{ width:18px; height:18px; color:var(--cat); flex:none; margin-top:1px; }
+  .dir a{ color:var(--cat); text-decoration:none; } .dir a:hover{ text-decoration:underline; }
+  .acc{ display:flex; flex-wrap:wrap; gap:10px; }
+  .btn{ display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:12px; cursor:pointer;
+    font-size:14px; font-weight:700; text-decoration:none; transition:.15s;
+    color:#f5ede7; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
+  .btn svg{ width:18px; height:18px; }
+  .btn:hover{ background:var(--cat-bg); border-color:var(--cat-bd); transform:translateY(-1px); }
+  .btn.wa{ background:linear-gradient(135deg,#25D366,#128C7E); border:none; color:#04120b; }
+  .btn.wa:hover{ background:linear-gradient(135deg,#2ee06f,#149c8c); }
+  .fotos{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
+  .fotos img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.08); transition:.15s; }
+  .fotos img:hover{ transform:scale(1.03); border-color:var(--cat-bd); }
+  .info-msg{ text-align:center; color:#a99e97; font-size:14px; padding:26px 0; }
+  /* Lightbox */
+  .lb{ position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; place-items:center; z-index:50; padding:20px; }
+  .lb.on{ display:grid; } .lb img{ max-width:96vw; max-height:92vh; border-radius:12px; }
+  @media (max-width:480px){ .fotos{ grid-template-columns:repeat(3,1fr); } .nombre{ font-size:21px; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="card" id="card"><div class="info-msg">Cargando…</div></div>
+</div>
+<div class="lb" id="lb"><img id="lbimg" alt=""></div>
+
+<script>
+/* FICHA DEL SOCIO — El Faro 360 (autocontenida, lee config.json de esta carpeta) */
+(function(){
+  'use strict';
+  var I={
+    pin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    wa:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    web:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    ig:'<rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>',
+    mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'
+  };
+  function svg(p){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function rgba(hex,a){ var h=(hex||'#ff6a3d').replace('#',''); if(h.length===3)h=h.split('').map(function(c){return c+c;}).join(''); var n=parseInt(h,16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+  var CARD=document.getElementById('card'), WRAP=document.getElementById('wrap'),
+      LB=document.getElementById('lb'), LBIMG=document.getElementById('lbimg');
+  LB.onclick=function(){ LB.classList.remove('on'); };
+
+  fetch('config.json',{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
+    var t=cfg.tour||{}, c=cfg.contacto||{}, tx=cfg.textos||{};
+    var color=t.color||'#ff6a3d';
+    WRAP.style.setProperty('--cat',color);
+    WRAP.style.setProperty('--cat-bg',rgba(color,0.16));
+    WRAP.style.setProperty('--cat-bd',rgba(color,0.5));
+
+    var CAT={hotel:'Hotel',bodega:'Bodega',restaurante:'Restaurante',alojamiento:'Alojamiento',salon:'Salón de Eventos',servicio:'Servicio',eventos:'Congresos y Eventos',tecnologia:'Tecnología y Audiovisual',transporte:'Transporte y Logística',viajes:'Viajes y Turismo'};
+    var fotos=cfg.fotos||[];
+    var portada=cfg.portada||(fotos[0]||'');
+
+    var OE=' onerror="this.style.display=\'none\'"';
+    var html='';
+    if(portada) html+='<img class="portada" src="'+esc(portada)+'" alt=""'+OE+'>';
+    html+='<div class="body">';
+    html+='<div class="top">';
+    if(cfg.logoUrl) html+='<img class="logo" src="'+esc(cfg.logoUrl)+'" alt=""'+OE+'>';
+    html+='<div><div class="nombre">'+esc(t.nombre||'')+'</div>';
+    if(t.categoria&&CAT[t.categoria]) html+='<span class="badge">'+esc(CAT[t.categoria])+'</span>';
+    html+='</div></div>';
+    if(tx.infoGeneral) html+='<div class="info">'+esc(tx.infoGeneral)+'</div>';
+    if(c.direccion||c.ubicacionUrl){
+      html+='<div class="dir">'+svg(I.pin)+'<span>';
+      html+=esc(c.direccion||'');
+      if(c.ubicacionUrl) html+=(c.direccion?' · ':'')+'<a href="'+esc(c.ubicacionUrl)+'" target="_blank" rel="noopener">Ver en el mapa</a>';
+      html+='</span></div>';
+    }
+    // Botones de contacto
+    var acc='';
+    if(c.whatsapp){ var num=(c.whatsapp||'').replace(/[^\d]/g,''); var msg=encodeURIComponent('Hola '+(t.nombre||'')+', vi el tour 360° y quiero hacer una consulta.');
+      acc+='<a class="btn wa" href="https://wa.me/'+num+'?text='+msg+'" target="_blank" rel="noopener">'+svg(I.wa)+'WhatsApp</a>'; }
+    if(c.web) acc+='<a class="btn" href="'+esc(c.web)+'" target="_blank" rel="noopener">'+svg(I.web)+'Sitio web</a>';
+    if(c.instagram) acc+='<a class="btn" href="'+esc(c.instagram)+'" target="_blank" rel="noopener">'+svg(I.ig)+'Instagram</a>';
+    if(c.email) acc+='<a class="btn" href="mailto:'+esc(c.email)+'">'+svg(I.mail)+'Email</a>';
+    if(acc) html+='<div class="acc">'+acc+'</div>';
+    // Galería
+    if(fotos.length){ html+='<div class="fotos">'; fotos.forEach(function(f){ html+='<img src="'+esc(f)+'" alt="" data-full="'+esc(f)+'"'+OE+'>'; }); html+='</div>'; }
+    html+='</div>';
+    CARD.innerHTML=html;
+
+    Array.prototype.forEach.call(CARD.querySelectorAll('[data-full]'),function(im){ im.onclick=function(){ LBIMG.src=im.getAttribute('data-full'); LB.classList.add('on'); }; });
+  }).catch(function(){ CARD.innerHTML='<div class="info-msg">No se pudo cargar <b>config.json</b>.<br>Verificá que esté en la misma carpeta y que el tour esté en un servidor.</div>'; });
+})();
+</script>
+</body>
+</html>
