@@ -31,25 +31,39 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             </p>
             <ul className="space-y-0.5">
               {items.map((item) => {
-                const active = isActive(pathname, item.href);
+                const active = !item.external && isActive(pathname, item.href);
+                const clases = cn(
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
+                  active
+                    ? "bg-brand/12 text-brand"
+                    : "text-content-muted hover:bg-surface-overlay hover:text-content"
+                );
+                const contenido = (
+                  <>
+                    {active && (
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand shadow-glow-sm" />
+                    )}
+                    <Icon name={item.icon} size={18} />
+                    <span className="truncate">{item.label}</span>
+                  </>
+                );
                 return (
-                  <li key={item.key}>
-                    <Link
-                      href={item.href}
-                      onClick={onNavigate}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
-                        active
-                          ? "bg-brand/12 text-brand"
-                          : "text-content-muted hover:bg-surface-overlay hover:text-content"
-                      )}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand shadow-glow-sm" />
-                      )}
-                      <Icon name={item.icon} size={18} />
-                      <span className="truncate">{item.label}</span>
-                    </Link>
+                  <li key={item.href}>
+                    {item.external ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={onNavigate}
+                        className={clases}
+                      >
+                        {contenido}
+                      </a>
+                    ) : (
+                      <Link href={item.href} onClick={onNavigate} className={clases}>
+                        {contenido}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
