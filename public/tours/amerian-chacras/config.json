@@ -16,18 +16,45 @@
     "infoGeneral": "40 habitaciones en base doble \n4 estrellas\nServicios \n✨Amenities\n🥞 Desayuno buffet de 7:00 a 10:30 hs\n🍽️Restaurante / Bar\n🛜 Conexión WiFi en áreas públicas y habitaciones\n❄️Aire Acondicionado\n👥Sala de Reuniones\n🅿️ Estacionamiento \n🕛 Recepción disponible las 24 hs\n🏊‍♂️ Piscina de temporada\n🏋🏼Acceso a sport club cercano\n📱SMART TV"
   },
   "logoUrl": "assets/LOGO AMERIAN.png",
-  "portada": "",
+  "portada": "assets/WhatsApp Image 2026-09-18 at 11.48.19.jpeg",
   "fotos": [],
   "botonera": {
     "mensajeWhatsapp": "",
     "botones": [
-      { "etiqueta": "Lobby", "panorama": "Lobby Amerian", "icono": "salon", "grupo": "General" },
-      { "etiqueta": "Desayunador", "panorama": "Resto Desdayuno", "icono": "cubiertos" },
-      { "etiqueta": "Entrada Directorio", "panorama": "Entrada Directorio 2", "icono": "salon" },
-      { "etiqueta": "Habitación", "panorama": "Entrada Habitación", "icono": "pin" },
-      { "etiqueta": "Jardín", "panorama": "Aérea Jardín", "icono": "pin" },
-      { "etiqueta": "Directorio Grande", "panorama": "Sala Directorio Grande", "icono": "puerta" },
-      { "etiqueta": "Contacto", "tipo": "whatsapp" }
+      {
+        "etiqueta": "Lobby",
+        "panorama": "Lobby Amerian",
+        "icono": "salon"
+      },
+      {
+        "etiqueta": "Resto Desayunador",
+        "panorama": "Resto Desayunador",
+        "icono": "cubiertos"
+      },
+      {
+        "etiqueta": "Entrada Directorio",
+        "panorama": "Entrada Directorio 2",
+        "icono": "salon"
+      },
+      {
+        "etiqueta": "Habitación",
+        "panorama": "Entrada Habitación",
+        "icono": "pin"
+      },
+      {
+        "etiqueta": "Jardín",
+        "panorama": "Aérea Jardín",
+        "icono": "pin"
+      },
+      {
+        "etiqueta": "Directorio Grande",
+        "panorama": "Sala Directorio Grande",
+        "icono": "puerta"
+      },
+      {
+        "etiqueta": "Contacto",
+        "tipo": "whatsapp"
+      }
     ]
   }
 }
