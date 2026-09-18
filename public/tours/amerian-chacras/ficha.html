@@ -41,9 +41,9 @@
   .dir{ display:flex; align-items:flex-start; gap:8px; font-size:14px; color:#c9bcb4; margin-bottom:16px; }
   .dir svg{ width:18px; height:18px; color:var(--cat); flex:none; margin-top:1px; }
   .dir a{ color:var(--cat); text-decoration:none; } .dir a:hover{ text-decoration:underline; }
-  .acc{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
-  .btn{ display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:12px; cursor:pointer;
-    font-size:14px; font-weight:700; text-decoration:none; transition:.15s;
+  .acc{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .btn{ display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 12px; border-radius:12px; cursor:pointer;
+    font-size:14px; font-weight:700; text-decoration:none; transition:.15s; white-space:nowrap;
     color:#f5ede7; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
   .btn svg{ width:18px; height:18px; }
   .btn:hover{ background:var(--cat-bg); border-color:var(--cat-bd); transform:translateY(-1px); }
@@ -63,7 +63,7 @@
   /* Lightbox */
   .lb{ position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; place-items:center; z-index:50; padding:20px; }
   .lb.on{ display:grid; } .lb img{ max-width:96vw; max-height:92vh; border-radius:12px; }
-  @media (max-width:480px){ .fotos{ grid-template-columns:repeat(3,1fr); } .nombre{ font-size:21px; } }
+  @media (max-width:480px){ .fotos{ grid-template-columns:repeat(3,1fr); } .nombre{ font-size:21px; } .acc{ grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
 <body>
