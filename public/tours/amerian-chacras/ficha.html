@@ -32,16 +32,16 @@
   .close svg{ width:18px; height:18px; }
   .portada{ width:100%; aspect-ratio:16/7; object-fit:cover; display:block; background:#1a1113; }
   .body{ padding:22px; }
-  .top{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
-  .logo{ width:56px; height:56px; border-radius:14px; object-fit:cover; background:#241a1c; border:1px solid rgba(255,255,255,.12); }
-  .nombre{ font-size:24px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  .top{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; margin-bottom:14px; }
+  .logo{ max-width:170px; max-height:58px; width:auto; height:auto; object-fit:contain; }
+  .nombre{ font-size:24px; font-weight:800; letter-spacing:-.02em; line-height:1.15; }
   .badge{ display:inline-block; margin-top:5px; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px;
     color:var(--cat); background:var(--cat-bg); border:1px solid var(--cat-bd); }
   .info{ font-size:15px; line-height:1.55; color:#e4d8d1; margin:8px 0 16px; white-space:pre-line; }
   .dir{ display:flex; align-items:flex-start; gap:8px; font-size:14px; color:#c9bcb4; margin-bottom:16px; }
   .dir svg{ width:18px; height:18px; color:var(--cat); flex:none; margin-top:1px; }
   .dir a{ color:var(--cat); text-decoration:none; } .dir a:hover{ text-decoration:underline; }
-  .acc{ display:flex; flex-wrap:wrap; gap:10px; }
+  .acc{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .btn{ display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:12px; cursor:pointer;
     font-size:14px; font-weight:700; text-decoration:none; transition:.15s;
     color:#f5ede7; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
@@ -49,6 +49,12 @@
   .btn:hover{ background:var(--cat-bg); border-color:var(--cat-bd); transform:translateY(-1px); }
   .btn.wa{ background:linear-gradient(135deg,#25D366,#128C7E); border:none; color:#04120b; }
   .btn.wa:hover{ background:linear-gradient(135deg,#2ee06f,#149c8c); }
+  .btn.web{ background:linear-gradient(135deg,#007FFF,#0068d6); border:none; color:#fff; }
+  .btn.web:hover{ background:linear-gradient(135deg,#1f8cff,#0a74e6); }
+  .btn.ig{ background:linear-gradient(135deg,#833AB4,#E1306C,#F77737); border:none; color:#fff; }
+  .btn.ig:hover{ background:linear-gradient(135deg,#9040c8,#f0407c,#ff8a4a); }
+  .btn.mail{ background:linear-gradient(135deg,#EA4335,#c62b1e); border:none; color:#fff; }
+  .btn.mail:hover{ background:linear-gradient(135deg,#f65548,#d63324); }
   .fotos{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
   .fotos img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; cursor:pointer;
     border:1px solid rgba(255,255,255,.08); transition:.15s; }
@@ -124,9 +130,9 @@
     var acc='';
     if(c.whatsapp){ var num=(c.whatsapp||'').replace(/[^\d]/g,''); var msg=encodeURIComponent('Hola '+(t.nombre||'')+', vi el tour 360° y quiero hacer una consulta.');
       acc+='<a class="btn wa" href="https://wa.me/'+num+'?text='+msg+'" target="_blank" rel="noopener">'+svg(I.wa)+'WhatsApp</a>'; }
-    if(c.web) acc+='<a class="btn" href="'+esc(c.web)+'" target="_blank" rel="noopener">'+svg(I.web)+'Sitio web</a>';
-    if(c.instagram) acc+='<a class="btn" href="'+esc(c.instagram)+'" target="_blank" rel="noopener">'+svg(I.ig)+'Instagram</a>';
-    if(c.email) acc+='<a class="btn" href="mailto:'+esc(c.email)+'">'+svg(I.mail)+'Email</a>';
+    if(c.web) acc+='<a class="btn web" href="'+esc(c.web)+'" target="_blank" rel="noopener">'+svg(I.web)+'Sitio web</a>';
+    if(c.instagram) acc+='<a class="btn ig" href="'+esc(c.instagram)+'" target="_blank" rel="noopener">'+svg(I.ig)+'Instagram</a>';
+    if(c.email) acc+='<a class="btn mail" href="mailto:'+esc(c.email)+'">'+svg(I.mail)+'Email</a>';
     if(acc) html+='<div class="acc">'+acc+'</div>';
     // Galería
     if(fotos.length){ html+='<div class="fotos">'; fotos.forEach(function(f){ html+='<img src="'+esc(f)+'" alt="" data-full="'+esc(f)+'"'+OE+'>'; }); html+='</div>'; }
