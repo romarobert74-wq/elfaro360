@@ -106,17 +106,30 @@
     return null;
   }
 
-  function cerrarBotonera() {
-    var cont = hallarPorNombre(NOMBRES_CONTENEDOR);
-    if (cont) { try { cont.set('visible', false); return; } catch (e) {} }
+  // Oculta los WebFrame cuya URL contenga una pista (ej. 'ir-a' o 'ficha').
+  function ocultarWebFrames(hint) {
     try {
       var player = getPlayer();
       var wfs = (player && player.getByClassName) ? (player.getByClassName('WebFrame') || []) : [];
       for (var i = 0; i < wfs.length; i++) {
         var url = ''; try { url = wfs[i].get('url') || ''; } catch (e) {}
-        if (url.indexOf('ir-a') >= 0) { try { wfs[i].set('visible', false); } catch (e) {} }
+        if (url.indexOf(hint) >= 0) { try { wfs[i].set('visible', false); } catch (e) {} }
       }
     } catch (e) {}
+  }
+
+  var NOMBRES_CONTENEDOR_FICHA = ['FICHA-PPAL', 'FICHA-PRINCIPAL', 'FICHA', 'INFO-PPAL', 'INFO'];
+
+  function cerrarBotonera() {
+    var cont = hallarPorNombre(NOMBRES_CONTENEDOR);
+    if (cont) { try { cont.set('visible', false); } catch (e) {} }
+    ocultarWebFrames('ir-a');
+  }
+
+  function cerrarFicha() {
+    var cont = hallarPorNombre(NOMBRES_CONTENEDOR_FICHA);
+    if (cont) { try { cont.set('visible', false); } catch (e) {} }
+    ocultarWebFrames('ficha');
   }
 
   window.addEventListener('message', function (ev) {
@@ -133,6 +146,7 @@
         if (kids && kids.length) for (var k = 0; k < kids.length; k++) { try { kids[k].set('visible', true); } catch (e) {} }
       }
     } else if (d.tipo === 'mb-cerrar-ir-a') { cerrarBotonera(); }
+    else if (d.tipo === 'mb-cerrar-ficha') { cerrarFicha(); }
     else if (d.tipo === 'mb-ping') { responder(ev.source, { tipo: 'mb-pong' }); }
     else if (d.tipo === 'mb-ir-a') { irA(d.panorama, ev.source); }
   });

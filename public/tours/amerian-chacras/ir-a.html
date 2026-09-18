@@ -11,7 +11,12 @@
   .card{ position:relative; width:min(560px,96vw); border-radius:24px; padding:22px;
     background:rgba(20,15,17,.74); backdrop-filter:blur(22px);
     border:1px solid rgba(255,255,255,.10); color:#f5ede7; box-shadow:0 24px 60px rgba(0,0,0,.45); }
-  .head{ text-align:center; margin-bottom:16px; }
+  .close{ position:absolute; top:12px; right:12px; z-index:5; display:grid; place-items:center;
+    width:34px; height:34px; border-radius:999px; cursor:pointer; color:#f5ede7;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18); transition:.15s; }
+  .close:hover{ background:rgba(0,0,0,.6); border-color:rgba(255,255,255,.4); transform:rotate(90deg); }
+  .close svg{ width:18px; height:18px; }
+  .head{ text-align:center; margin-bottom:16px; padding:0 26px; }
   .title{ font-size:27px; font-weight:800; letter-spacing:-.02em; }
   .sub{ font-size:13px; color:#a99e97; margin-top:2px; }
   .info{ text-align:center; color:#a99e97; font-size:14px; padding:18px 0; }
@@ -86,6 +91,7 @@
   };
   var CHEV='<path d="m9 18 6-6-6-6"/>';
   var BACK='<path d="m15 18-6-6 6-6"/>';
+  var EQUIS='<path d="M18 6 6 18"/><path d="m6 6 12 12"/>';
   function svg(inner){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; }
   function icono(name){ return P[name] ? '<span class="ic">'+svg(P[name])+'</span>' : ''; }
 
@@ -114,7 +120,7 @@
     var estado={ activo:grupos[0]||'', submenu:null };
 
     function pinta(){
-      var html='';
+      var html='<button class="close" id="cerrar" aria-label="Cerrar">'+svg(EQUIS)+'</button>';
       if(estado.submenu){
         var sm=estado.submenu;
         html+='<button class="back" id="back">'+svg(BACK)+' Atrás</button>';
@@ -144,6 +150,7 @@
       }
       CARD.innerHTML=html;
 
+      var cerrar=document.getElementById('cerrar'); if(cerrar)cerrar.onclick=function(){ emitir({tipo:'mb-cerrar-ir-a'}); };
       var back=document.getElementById('back'); if(back)back.onclick=function(){estado.submenu=null;pinta();};
       Array.prototype.forEach.call(CARD.querySelectorAll('[data-tab]'),function(el){ el.onclick=function(){estado.activo=el.getAttribute('data-tab');pinta();}; });
       Array.prototype.forEach.call(CARD.querySelectorAll('[data-pan]'),function(el){ el.onclick=function(){irA(el.getAttribute('data-pan'));}; });
