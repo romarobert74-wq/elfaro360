@@ -1,0 +1,33 @@
+{
+  "tour": {
+    "nombre": "Amerian Chacras de Coria",
+    "categoria": "hotel",
+    "color": "#3b82f6"
+  },
+  "contacto": {
+    "whatsapp": "5492613890524",
+    "web": "https://hotelchacrasdecoria.amerian.com/",
+    "instagram": "https://www.instagram.com/amerianchacras?stkn=bXRmY3FxbzRwMzlt",
+    "email": "recepcionchacras@amerian.com",
+    "direccion": "Almirante Brown 2403",
+    "ubicacionUrl": "https://maps.app.goo.gl/Ga1Hckp3zcF3JMky8"
+  },
+  "textos": {
+    "infoGeneral": "40 habitaciones en base doble \n4 estrellas\nServicios \n✨Amenities\n🥞 Desayuno buffet de 7:00 a 10:30 hs\n🍽️Restaurante / Bar\n🛜 Conexión WiFi en áreas públicas y habitaciones\n❄️Aire Acondicionado\n👥Sala de Reuniones\n🅿️ Estacionamiento \n🕛 Recepción disponible las 24 hs\n🏊‍♂️ Piscina de temporada\n🏋🏼Acceso a sport club cercano\n📱SMART TV"
+  },
+  "logoUrl": "assets/LOGO AMERIAN.png",
+  "portada": "",
+  "fotos": [],
+  "botonera": {
+    "mensajeWhatsapp": "",
+    "botones": [
+      { "etiqueta": "Lobby", "panorama": "Lobby Amerian", "icono": "salon", "grupo": "General" },
+      { "etiqueta": "Desayunador", "panorama": "Resto Desdayuno", "icono": "cubiertos" },
+      { "etiqueta": "Entrada Directorio", "panorama": "Entrada Directorio 2", "icono": "salon" },
+      { "etiqueta": "Habitación", "panorama": "Entrada Habitación", "icono": "pin" },
+      { "etiqueta": "Jardín", "panorama": "Aérea Jardín", "icono": "pin" },
+      { "etiqueta": "Directorio Grande", "panorama": "Sala Directorio Grande", "icono": "puerta" },
+      { "etiqueta": "Contacto", "tipo": "whatsapp" }
+    ]
+  }
+}

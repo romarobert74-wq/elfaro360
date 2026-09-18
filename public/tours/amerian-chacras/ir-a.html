@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ir a — El Faro 360</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:transparent; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap{ min-height:100vh; display:grid; place-items:center; padding:16px; }
+  .card{ position:relative; width:min(560px,96vw); border-radius:24px; padding:22px;
+    background:rgba(20,15,17,.74); backdrop-filter:blur(22px);
+    border:1px solid rgba(255,255,255,.10); color:#f5ede7; box-shadow:0 24px 60px rgba(0,0,0,.45); }
+  .head{ text-align:center; margin-bottom:16px; }
+  .title{ font-size:27px; font-weight:800; letter-spacing:-.02em; }
+  .sub{ font-size:13px; color:#a99e97; margin-top:2px; }
+  .info{ text-align:center; color:#a99e97; font-size:14px; padding:18px 0; }
+  .tabs{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:14px; }
+  .tab{ padding:9px 16px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:600;
+    color:#a99e97; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); transition:.15s; }
+  .tab.on{ color:var(--cat); background:var(--cat-bg); border-color:var(--cat-bd); }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn-go{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:15px 16px; border-radius:15px; cursor:pointer; font-size:15px; font-weight:600;
+    color:#f5ede7; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10);
+    transition:.15s; text-align:left; width:100%; }
+  .btn-go:hover{ background:var(--cat-bg); border-color:var(--cat-bd); transform:translateY(-1px);
+    box-shadow:0 8px 22px -10px var(--cat); }
+  .btn-go:hover .ic, .btn-go:hover .chev{ color:var(--cat); }
+  .btn-go:active{ transform:translateY(0); }
+  .btn-go.wa{ grid-column:1 / -1; justify-content:center;
+    background:linear-gradient(135deg,#25D366,#128C7E); border:none; color:#04120b; font-weight:800; }
+  .btn-go.wa:hover{ background:linear-gradient(135deg,#2ee06f,#149c8c); box-shadow:0 10px 26px -8px #25D366; transform:translateY(-1px); }
+  .btn-go.wa .ic{ color:#04120b; } .btn-go.wa .chev{ display:none; }
+  .left{ display:flex; align-items:center; gap:12px; }
+  .ic{ display:grid; place-items:center; color:var(--cat); transition:.15s; }
+  .ic svg,.chev svg{ width:20px; height:20px; }
+  .chev{ opacity:.5; transition:.15s; color:#f5ede7; }
+  .back{ display:inline-flex; align-items:center; gap:5px; margin-bottom:12px; padding:7px 13px;
+    border-radius:999px; cursor:pointer; font-size:13px; font-weight:700; color:var(--cat);
+    background:var(--cat-bg); border:1px solid var(--cat-bd); }
+  .back:hover{ filter:brightness(1.15); }
+  .back svg{ width:16px; height:16px; }
+  @media (max-width:480px){ .grid{ grid-template-columns:1fr; gap:9px; } .btn-go{ font-size:14px; padding:14px; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="card" id="card">
+    <div class="info">Cargando…</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+ * BOTONERA "IR A" — El Faro 360 (versión autocontenida, sin base de datos)
+ * Lee los datos de un config.json ubicado en la MISMA carpeta.
+ * Al tocar un botón le ordena a 3DVista saltar al panorama por NOMBRE
+ * (puente: puente.js pegado en el "Al comenzar" del tour).
+ * ==========================================================================*/
+(function () {
+  'use strict';
+
+  // --- Íconos (SVG inline, sin dependencias externas) ---
+  var P = { // path(s) estilo Lucide (viewBox 24)
+    puerta:'<path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/>',
+    cama:'<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
+    pileta:'<path d="M2 12h20"/><path d="M5 12V6a2 2 0 0 1 2-2h3"/><path d="M19 12V6a2 2 0 0 0-2-2h-1"/><path d="M2 16c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/><path d="M2 20c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/>',
+    copa:'<path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-1-8H8c-.5 4-1 6-1 8a5 5 0 0 0 5 5Z"/>',
+    vinedo:'<path d="M22 5V2l-5.89 5.89"/><circle cx="16.6" cy="15.89" r="3"/><circle cx="8.11" cy="7.4" r="3"/><circle cx="12.35" cy="11.65" r="3"/><circle cx="13.91" cy="5.85" r="3"/><circle cx="18.15" cy="10.09" r="3"/><circle cx="6.56" cy="13.2" r="3"/><circle cx="10.8" cy="17.44" r="3"/><circle cx="5" cy="19" r="3"/>',
+    cubiertos:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 15v7"/>',
+    spa:'<path d="M12 22c1.25-1.25 2.5-2.5 3.5-4"/><path d="M12 22c-1.25-1.25-2.5-2.5-3.5-4"/><path d="M12 13a5 5 0 0 1 5-5c0 3-2 5-5 8-3-3-5-5-5-8a5 5 0 0 1 5 5Z"/>',
+    gimnasio:'<path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>',
+    salon:'<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L12 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
+    galeria:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    terraza:'<path d="M12 2v20"/><path d="M2 12h20"/><path d="M20 16a8 8 0 1 0-16 0"/>',
+    tienda:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+    pin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    estrella:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.79 21.01a.53.53 0 0 1-.771-.56l.882-5.139a2.12 2.12 0 0 0-.611-1.879L2.554 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    edificio:'<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+    bus:'<path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>',
+    valija:'<path d="M6 20a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2"/><path d="M8 18V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14"/><path d="M10 20h4"/><circle cx="16" cy="20" r="2"/><circle cx="8" cy="20" r="2"/>',
+    whatsapp:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    calendario:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'
+  };
+  var CHEV='<path d="m9 18 6-6-6-6"/>';
+  var BACK='<path d="m15 18-6-6 6-6"/>';
+  function svg(inner){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; }
+  function icono(name){ return P[name] ? '<span class="ic">'+svg(P[name])+'</span>' : ''; }
+
+  function rgba(hex,a){ var h=(hex||'#ff6a3d').replace('#',''); if(h.length===3)h=h.split('').map(function(c){return c+c;}).join(''); var n=parseInt(h,16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+
+  var CARD=document.getElementById('card'), WRAP=document.getElementById('wrap');
+  var CFG=null, WHATS='', NOMBRE='', MSG='';
+
+  // --- Puente con 3DVista ---
+  function emitir(msg){ var payload=Object.assign({source:'faro-ir-a'},msg);
+    try{ window.parent&&window.parent.postMessage(payload,'*'); }catch(e){}
+    try{ if(window.top&&window.top!==window.parent) window.top.postMessage(payload,'*'); }catch(e){}
+  }
+  function irA(pan){ emitir({tipo:'mb-ir-a',panorama:pan}); setTimeout(function(){emitir({tipo:'mb-cerrar-ir-a'});},120); }
+  function abrirWhatsapp(){ var num=(WHATS||'').replace(/[^\d]/g,''); if(!num)return;
+    var texto=MSG||('Hola'+(NOMBRE?' '+NOMBRE:'')+', vi el tour 360° y quiero hacer una consulta / reserva.');
+    try{ window.open('https://wa.me/'+num+'?text='+encodeURIComponent(texto),'_blank','noopener'); }catch(e){}
+    emitir({tipo:'mb-cerrar-ir-a'});
+  }
+
+  function grupoDe(b){ return (b.grupo||'').trim(); }
+
+  function render(){
+    var b=(CFG.botonera&&CFG.botonera.botones)||[];
+    var grupos=[]; b.forEach(function(x){ var g=grupoDe(x); if(g&&grupos.indexOf(g)<0)grupos.push(g); });
+    var estado={ activo:grupos[0]||'', submenu:null };
+
+    function pinta(){
+      var html='';
+      if(estado.submenu){
+        var sm=estado.submenu;
+        html+='<button class="back" id="back">'+svg(BACK)+' Atrás</button>';
+        html+='<div class="head"><div class="title">'+esc(sm.etiqueta)+'</div><div class="sub">Elegí una opción</div></div>';
+        html+='<div class="grid">';
+        (sm.subbotones||[]).forEach(function(s,i){
+          html+='<button class="btn-go" data-pan="'+esc(s.panorama)+'"><span class="left">'+icono(s.icono)+'<span>'+esc(s.etiqueta)+'</span></span><span class="chev">'+svg(CHEV)+'</span></button>';
+        });
+        html+='</div>';
+      } else {
+        html+='<div class="head"><div class="title">¿A dónde querés ir?</div><div class="sub">Elegí un lugar del recorrido</div></div>';
+        if(grupos.length>1){ html+='<div class="tabs">'; grupos.forEach(function(g){ html+='<button class="tab'+(g===estado.activo?' on':'')+'" data-tab="'+esc(g)+'">'+esc(g)+'</button>'; }); html+='</div>'; }
+        var vis=grupos.length? b.filter(function(x){return grupoDe(x)===estado.activo;}) : b;
+        if(!vis.length){ html+='<div class="info">Este tour todavía no tiene botones.</div>'; }
+        else{
+          html+='<div class="grid">';
+          vis.forEach(function(x,i){
+            var wa=x.tipo==='whatsapp', sub=x.subbotones&&x.subbotones.length>0;
+            var ic=wa?icono('whatsapp'):icono(x.icono);
+            html+='<button class="btn-go'+(wa?' wa':'')+'" data-i="'+b.indexOf(x)+'"><span class="left">'+ic+'<span>'+esc(x.etiqueta)+'</span></span><span class="chev">'+svg(CHEV)+'</span></button>';
+          });
+          html+='</div>';
+        }
+      }
+      CARD.innerHTML=html;
+
+      var back=document.getElementById('back'); if(back)back.onclick=function(){estado.submenu=null;pinta();};
+      Array.prototype.forEach.call(CARD.querySelectorAll('[data-tab]'),function(el){ el.onclick=function(){estado.activo=el.getAttribute('data-tab');pinta();}; });
+      Array.prototype.forEach.call(CARD.querySelectorAll('[data-pan]'),function(el){ el.onclick=function(){irA(el.getAttribute('data-pan'));}; });
+      Array.prototype.forEach.call(CARD.querySelectorAll('[data-i]'),function(el){ el.onclick=function(){
+        var x=b[+el.getAttribute('data-i')];
+        if(x.subbotones&&x.subbotones.length){ estado.submenu=x; pinta(); return; }
+        if(x.tipo==='whatsapp'){ abrirWhatsapp(); return; }
+        irA(x.panorama);
+      }; });
+    }
+    pinta();
+  }
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // --- Carga del config.json (misma carpeta) ---
+  fetch('config.json',{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
+    CFG=cfg;
+    var color=(cfg.tour&&cfg.tour.color)||'#ff6a3d';
+    WRAP.style.setProperty('--cat',color);
+    WRAP.style.setProperty('--cat-bg',rgba(color,0.16));
+    WRAP.style.setProperty('--cat-bd',rgba(color,0.5));
+    WHATS=(cfg.contacto&&cfg.contacto.whatsapp)||'';
+    NOMBRE=(cfg.tour&&cfg.tour.nombre)||'';
+    MSG=(cfg.botonera&&cfg.botonera.mensajeWhatsapp)||'';
+    render();
+  }).catch(function(){ CARD.innerHTML='<div class="info">No se pudo cargar <b>config.json</b>.<br>Verificá que esté en la misma carpeta y que el tour esté publicado en un servidor (no abierto como archivo local).</div>'; });
+})();
+</script>
+</body>
+</html>
