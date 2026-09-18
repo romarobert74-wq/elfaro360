@@ -60,30 +60,41 @@
   }
 
   function normalizar(s) {
-    return String(s || '').toLowerCase()
+    // trim ANTES de reemplazar espacios, así un espacio final no queda como "-" (bug de coincidencia)
+    return String(s || '').trim().toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/\s+/g, '-').trim();
+      .replace(/\s+/g, '-');
   }
 
   function irA(nombre, source) {
     var objetivo = normalizar(nombre);
     var pls = todasLasPlaylists();
     var player = getPlayer();
-    var metodos = [];
+    var disponibles = [];
     for (var p = 0; p < pls.length; p++) {
       var items; try { items = pls[p].get('items') || []; } catch (e) { items = []; }
       for (var i = 0; i < items.length; i++) {
-        if (normalizar(nombreDe(items[i])) === objetivo) {
+        var nom = nombreDe(items[i]);
+        disponibles.push(nom);
+        if (normalizar(nom) === objetivo) {
+          var metodos = [];
           try { if (player && player.setMediaByIndex) { player.setMediaByIndex(pls[p], i); metodos.push('setMediaByIndex(pl,i)'); } } catch (e) {}
           if (!metodos.length) { try { if (player && player.setMediaByIndex) { player.setMediaByIndex(i); metodos.push('setMediaByIndex(i)'); } } catch (e) {} }
           try { pls[p].set('selectedIndex', i); metodos.push('selectedIndex#' + p); } catch (e) {}
           try { var media = items[i].get('media'); if (player && player.openMedia && media) { player.openMedia(media); metodos.push('openMedia'); } } catch (e) {}
+          try { console.log('%c[Faro] Ir a OK:', 'color:#2ecc71;font-weight:bold', nombre, '->', nom, '| metodos:', metodos.join(' + ')); } catch (e) {}
           responder(source, { tipo: metodos.length ? 'mb-ir-a-ok' : 'mb-ir-a-fail', panorama: nombre, metodo: metodos.join(' + ') || '(ninguno)', playlist: p, indice: i });
           return;
         }
       }
     }
-    responder(source, { tipo: 'mb-ir-a-fail', panorama: nombre, playlists: pls.length });
+    // No se encontró: mostramos en consola la lista real de panoramas para diagnosticar.
+    try {
+      console.warn('[Faro] PANORAMA NO ENCONTRADO. Buscabas: "' + nombre + '"  (normalizado: "' + objetivo + '")');
+      console.warn('[Faro] Panoramas disponibles en el tour:', disponibles);
+      console.warn('[Faro] (nombres normalizados):', disponibles.map(normalizar));
+    } catch (e) {}
+    responder(source, { tipo: 'mb-ir-a-fail', panorama: nombre, playlists: pls.length, disponibles: disponibles });
   }
 
   var NOMBRES_CONTENEDOR = ['BOTONERA-PPAL', 'BOTONERA-PRINCIPAL', 'BOTONERA'];
