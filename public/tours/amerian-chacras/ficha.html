@@ -77,7 +77,8 @@
       LB=document.getElementById('lb'), LBIMG=document.getElementById('lbimg');
   LB.onclick=function(){ LB.classList.remove('on'); };
 
-  fetch('config.json',{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
+  // ?t=... evita que cualquier caché (navegador, hosting, CDN) sirva un config viejo.
+  fetch('config.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
     var t=cfg.tour||{}, c=cfg.contacto||{}, tx=cfg.textos||{};
     var color=t.color||'#ff6a3d';
     WRAP.style.setProperty('--cat',color);

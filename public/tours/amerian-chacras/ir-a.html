@@ -167,7 +167,8 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   // --- Carga del config.json (misma carpeta) ---
-  fetch('config.json',{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
+  // ?t=... evita que cualquier caché (navegador, hosting, CDN) sirva un config viejo.
+  fetch('config.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(cfg){
     CFG=cfg;
     var color=(cfg.tour&&cfg.tour.color)||'#ff6a3d';
     WRAP.style.setProperty('--cat',color);
