@@ -126,8 +126,11 @@
         html+='</div>';
       } else {
         html+='<div class="head"><div class="title">¿A dónde querés ir?</div><div class="sub">Elegí un lugar del recorrido</div></div>';
-        if(grupos.length>1){ html+='<div class="tabs">'; grupos.forEach(function(g){ html+='<button class="tab'+(g===estado.activo?' on':'')+'" data-tab="'+esc(g)+'">'+esc(g)+'</button>'; }); html+='</div>'; }
-        var vis=grupos.length? b.filter(function(x){return grupoDe(x)===estado.activo;}) : b;
+        var multi=grupos.length>1;
+        if(multi){ html+='<div class="tabs">'; grupos.forEach(function(g){ html+='<button class="tab'+(g===estado.activo?' on':'')+'" data-tab="'+esc(g)+'">'+esc(g)+'</button>'; }); html+='</div>'; }
+        // Con 2+ grupos filtramos por pestaña (los botones sin grupo, ej. Contacto, se ven siempre).
+        // Con 1 grupo o ninguno, mostramos todos los botones.
+        var vis=multi? b.filter(function(x){var g=grupoDe(x);return g===estado.activo||!g;}) : b;
         if(!vis.length){ html+='<div class="info">Este tour todavía no tiene botones.</div>'; }
         else{
           html+='<div class="grid">';
