@@ -19,19 +19,29 @@ import type { EtapaPago, PagoEmpleado } from "@/lib/types";
 
 export default function PagosPage() {
   const store = useStore();
-  const { pagosEmpleados, empleados, ordenes, presupuestos, clientes, currentUser, addPago, updatePago, removePago, can } = store;
+  const { pagosEmpleados, empleados, ordenes, presupuestos, clientes, destinos, currentUser, addPago, updatePago, removePago, can } = store;
   const editable = can("pagos", "edit");
   const isEmpleado = currentUser?.role === "empleado";
 
   const empName = (id: string) => empleados.find((e) => e.id === id)?.nombre ?? "—";
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
-  // Nombre del presupuesto asociado a una orden
+  const ordenDe = (ordenId: string) => ordenes.find((x) => x.id === ordenId);
+  // Nombre del presupuesto asociado a una orden (con cliente) — usado en el selector del modal
   const presupuestoDeOrden = (ordenId: string) => {
-    const o = ordenes.find((x) => x.id === ordenId);
+    const o = ordenDe(ordenId);
     if (!o) return "—";
     const pres = presupuestos.find((p) => p.id === o.presupuestoId);
     return `${pres?.numero ?? o.numero} · ${clienteName(o.clienteId)}`;
   };
+  // Solo el número de presupuesto (para la columna de la grilla)
+  const presNumDeOrden = (ordenId: string) => {
+    const o = ordenDe(ordenId);
+    if (!o) return "—";
+    return presupuestos.find((p) => p.id === o.presupuestoId)?.numero ?? o.numero;
+  };
+  // Cliente y destino a partir de la orden del pago
+  const clienteDePago = (p: PagoEmpleado) => { const o = ordenDe(p.ordenId); return o ? clienteName(o.clienteId) : "—"; };
+  const destinoDePago = (p: PagoEmpleado) => { const o = ordenDe(p.ordenId); return o ? (destinos.find((d) => d.id === o.destinoId)?.nombre ?? "—") : "—"; };
 
   const [filtroEmp, setFiltroEmp] = useState<string>("todos");
   const [modal, setModal] = useState(false);
@@ -75,7 +85,9 @@ export default function PagosPage() {
 
   const columns: Column<PagoEmpleado>[] = [
     { key: "emp", header: "Empleado", render: (p) => <span className="font-medium">{empName(p.empleadoId)}</span> },
-    { key: "presupuesto", header: "Presupuesto / Concepto", hideOnMobile: true, render: (p) => <span className="text-content-muted">{p.ordenId ? presupuestoDeOrden(p.ordenId) : (p.concepto || "Gasto general")}</span> },
+    { key: "presupuesto", header: "Presupuesto", hideOnMobile: true, render: (p) => <span className="text-content-muted">{p.ordenId ? presNumDeOrden(p.ordenId) : (p.concepto || "Gasto general")}</span> },
+    { key: "cliente", header: "Cliente", hideOnMobile: true, render: (p) => <span className="text-content-muted">{clienteDePago(p)}</span> },
+    { key: "destino", header: "Destino", hideOnMobile: true, render: (p) => <span className="text-content-muted">{destinoDePago(p)}</span> },
     {
       key: "etapa",
       header: "Etapa",

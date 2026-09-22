@@ -19,11 +19,16 @@ import type { Cobro, MetodoPago } from "@/lib/types";
 
 export default function CobrosPage() {
   const store = useStore();
-  const { cobros, clientes, presupuestos, addCobro, updateCobro, removeCobro, can } = store;
+  const { cobros, clientes, destinos, presupuestos, addCobro, updateCobro, removeCobro, can } = store;
   const editable = can("cobros", "edit");
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
   const presNum = (id: string) => presupuestos.find((p) => p.id === id)?.numero ?? "—";
+  // El destino viene del presupuesto asociado al cobro
+  const destinoDeCobro = (presupuestoId: string) => {
+    const p = presupuestos.find((x) => x.id === presupuestoId);
+    return p ? (destinos.find((d) => d.id === p.destinoId)?.nombre ?? "—") : "—";
+  };
 
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Cobro | null>(null);
@@ -72,6 +77,7 @@ export default function CobrosPage() {
         </div>
       ),
     },
+    { key: "destino", header: "Destino", hideOnMobile: true, render: (c) => <span className="text-content-muted">{destinoDeCobro(c.presupuestoId)}</span> },
     { key: "metodo", header: "Método", hideOnMobile: true, render: (c) => <span className="text-content-muted">{metodoPagoLabels[c.metodo]}</span> },
     { key: "importe", header: "Importe", className: "text-right", render: (c) => <span className="font-medium tabular-nums">{formatCurrency(c.importe)}</span> },
     {
