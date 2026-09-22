@@ -205,7 +205,7 @@ export interface PagoEmpleado {
   id: string;
   empleadoId: string;
   ordenId: string; // "" si es un gasto general (nafta, etc.) sin orden
-  etapa: EtapaPago;
+  etapas: EtapaPago[]; // una o varias etapas cubiertas por el pago
   concepto: string; // ej. "Nafta", "Peaje" — descripción libre del pago
   monto: number;
   estado: EstadoPago;

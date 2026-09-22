@@ -466,11 +466,11 @@ export const ordenes: OrdenTrabajo[] = [
 
 // ---------- Pagos a empleados ----------
 export const pagosEmpleados: PagoEmpleado[] = [
-  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapa: "aprobado", concepto: "", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
-  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapa: "relevamiento", concepto: "", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
-  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapa: "edicion", concepto: "", monto: 26000, estado: "pendiente", fecha: null },
-  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapa: "aprobado", concepto: "", monto: 8000, estado: "pendiente", fecha: null },
-  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapa: "edicion", concepto: "", monto: 20000, estado: "pendiente", fecha: null },
+  { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
+  { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["relevamiento"], concepto: "", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
+  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapas: ["edicion"], concepto: "", monto: 26000, estado: "pendiente", fecha: null },
+  { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pendiente", fecha: null },
+  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapas: ["edicion"], concepto: "", monto: 20000, estado: "pendiente", fecha: null },
 ];
 
 // ---------- Cobros ----------

@@ -31,7 +31,8 @@ export default function PagosPage() {
     const o = ordenDe(ordenId);
     if (!o) return "—";
     const pres = presupuestos.find((p) => p.id === o.presupuestoId);
-    return `${pres?.numero ?? o.numero} · ${clienteName(o.clienteId)}`;
+    const dest = destinos.find((d) => d.id === o.destinoId)?.nombre;
+    return `${pres?.numero ?? o.numero} · ${clienteName(o.clienteId)}${dest ? " · " + dest : ""}`;
   };
   // Solo el número de presupuesto (para la columna de la grilla)
   const presNumDeOrden = (ordenId: string) => {
@@ -49,7 +50,7 @@ export default function PagosPage() {
   const [form, setForm] = useState<Omit<PagoEmpleado, "id">>({
     empleadoId: empleados[0]?.id ?? "",
     ordenId: ordenes[0]?.id ?? "",
-    etapa: "relevamiento",
+    etapas: ["relevamiento"],
     concepto: "",
     monto: 0,
     estado: "pendiente",
@@ -72,7 +73,7 @@ export default function PagosPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapa: "relevamiento", concepto: "", monto: 0, estado: "pendiente", fecha: null });
+    setForm({ empleadoId: empleados[0]?.id ?? "", ordenId: ordenes[0]?.id ?? "", etapas: ["relevamiento"], concepto: "", monto: 0, estado: "pendiente", fecha: null });
     setModal(true);
   };
   const openEdit = (p: PagoEmpleado) => { setEditing(p); const { id, ...rest } = p; setForm(rest); setModal(true); };
@@ -90,10 +91,10 @@ export default function PagosPage() {
     { key: "destino", header: "Destino", hideOnMobile: true, render: (p) => <span className="text-content-muted">{destinoDePago(p)}</span> },
     {
       key: "etapa",
-      header: "Etapa",
+      header: "Etapas",
       render: (p) => (
         <div>
-          <span className="text-content-muted">{etapaPagoLabel(p.etapa)}</span>
+          <span className="text-content-muted">{p.etapas.length ? p.etapas.map(etapaPagoLabel).join(", ") : "—"}</span>
           {p.concepto && <p className="text-xs text-content-subtle">{p.concepto}</p>}
         </div>
       ),
@@ -165,16 +166,37 @@ export default function PagosPage() {
             </Select>
           </Field>
           <Field label="Presupuesto / orden" hint="Elegí 'Sin orden' para nafta u otros gastos">
-            <Select value={form.ordenId} onChange={(e) => setForm({ ...form, ordenId: e.target.value, etapa: e.target.value ? form.etapa : "otros" })}>
+            <Select value={form.ordenId} onChange={(e) => setForm({ ...form, ordenId: e.target.value, etapas: e.target.value ? form.etapas : ["otros"] })}>
               <option value="">Sin orden (gasto general)</option>
               {ordenes.map((o) => (<option key={o.id} value={o.id}>{presupuestoDeOrden(o.id)}</option>))}
             </Select>
           </Field>
-          <Field label="Etapa">
-            <Select value={form.etapa} onChange={(e) => setForm({ ...form, etapa: e.target.value as EtapaPago })}>
-              {etapaOrder.map((k) => (<option key={k} value={k}>{etapaPagoLabel(k)}</option>))}
-              <option value="otros">Otros</option>
-            </Select>
+          <Field label="Etapas" hint="Podés elegir más de una" className="sm:col-span-2">
+            <div className="flex flex-wrap gap-2">
+              {([...etapaOrder, "otros"] as EtapaPago[]).map((k) => {
+                const active = form.etapas.includes(k);
+                return (
+                  <button
+                    type="button"
+                    key={k}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        etapas: active ? f.etapas.filter((x) => x !== k) : [...f.etapas, k],
+                      }))
+                    }
+                    className={
+                      "rounded-full border px-3 py-1.5 text-sm font-medium transition " +
+                      (active
+                        ? "border-brand bg-brand/15 text-brand"
+                        : "border-line text-content-muted hover:bg-surface-overlay hover:text-content")
+                    }
+                  >
+                    {etapaPagoLabel(k)}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Concepto" className="sm:col-span-2" hint="Ej. Nafta, peaje, viáticos… (opcional)">
             <TextInput value={form.concepto} onChange={(e) => setForm({ ...form, concepto: e.target.value })} placeholder="Nafta" />
