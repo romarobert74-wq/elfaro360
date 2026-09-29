@@ -33,6 +33,7 @@ export default function PresupuestosPage() {
   const [toDelete, setToDelete] = useState<Presupuesto | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
+  const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
 
   const years = useMemo(
     () => Array.from(new Set(presupuestos.map((p) => Number(p.fecha.slice(0, 4))))).sort((a, b) => b - a),
@@ -44,7 +45,8 @@ export default function PresupuestosPage() {
       presupuestos.filter(
         (p) =>
           (p.numero.toLowerCase().includes(q.toLowerCase()) ||
-            clienteName(p.clienteId).toLowerCase().includes(q.toLowerCase())) &&
+            clienteName(p.clienteId).toLowerCase().includes(q.toLowerCase()) ||
+            destinoName(p.destinoId).toLowerCase().includes(q.toLowerCase())) &&
           matchPeriod(p.fecha, period)
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,13 +79,10 @@ export default function PresupuestosPage() {
       key: "numero",
       header: "Presupuesto",
       sortValue: (p) => p.numero,
-      render: (p) => (
-        <div>
-          <p className="font-medium">{p.numero}</p>
-          <p className="text-xs text-content-subtle">{clienteName(p.clienteId)}</p>
-        </div>
-      ),
+      render: (p) => <span className="font-medium">{p.numero}</span>,
     },
+    { key: "cliente", header: "Cliente", sortValue: (p) => clienteName(p.clienteId), render: (p) => <span>{clienteName(p.clienteId)}</span> },
+    { key: "destino", header: "Destino", hideOnMobile: true, sortValue: (p) => destinoName(p.destinoId), render: (p) => <span className="text-content-muted">{destinoName(p.destinoId)}</span> },
     { key: "fecha", header: "Fecha", hideOnMobile: true, sortValue: (p) => p.fecha, render: (p) => <span className="text-content-muted">{formatDate(p.fecha)}</span> },
     { key: "metodo", header: "Pago", hideOnMobile: true, sortValue: (p) => metodoPagoLabels[p.metodoPago], render: (p) => <span className="text-xs text-content-muted">{metodoPagoLabels[p.metodoPago]}</span> },
     { key: "total", header: "Total", className: "text-right", sortValue: (p) => computeQuote(p.items, p.config, p.metodoPago).total, render: (p) => <span className="font-medium tabular-nums">{formatCurrency(computeQuote(p.items, p.config, p.metodoPago).total)}</span> },
