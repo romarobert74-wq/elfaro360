@@ -443,6 +443,11 @@ export const ordenes: OrdenTrabajo[] = [
     clienteId: "cli-2",
     destinoId: "des-2",
     responsableIds: ["emp-1"],
+    contacto: "",
+    servicio: "Tour 360",
+    direccion: "",
+    fechaRelevamiento: "2026-08-06",
+    horaRelevamiento: "09:00",
     fechaCreacion: "2026-07-12",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
@@ -458,6 +463,11 @@ export const ordenes: OrdenTrabajo[] = [
     clienteId: "cli-1",
     destinoId: "des-1",
     responsableIds: ["emp-1"],
+    contacto: "",
+    servicio: "Tour 360",
+    direccion: "",
+    fechaRelevamiento: "2026-08-08",
+    horaRelevamiento: "10:00",
     fechaCreacion: "2026-07-24",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },

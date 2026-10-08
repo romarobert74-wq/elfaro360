@@ -34,6 +34,11 @@ export default function OrdenesPage() {
   const [nvCliente, setNvCliente] = useState("");
   const [nvDestino, setNvDestino] = useState("");
   const [nvResponsables, setNvResponsables] = useState<string[]>([]);
+  const [nvContacto, setNvContacto] = useState("");
+  const [nvServicio, setNvServicio] = useState("");
+  const [nvDireccion, setNvDireccion] = useState("");
+  const [nvFechaRel, setNvFechaRel] = useState("");
+  const [nvHoraRel, setNvHoraRel] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
@@ -54,11 +59,30 @@ export default function OrdenesPage() {
   );
 
   const nextNumero = () => `OT-2026-${String(ordenes.length + 1).padStart(3, "0")}`;
+  const hoy = () => new Date().toISOString().slice(0, 10);
+
+  // Al elegir el destino, traemos sus datos (dirección y contacto).
+  const onElegirDestino = (destinoId: string) => {
+    setNvDestino(destinoId);
+    const d = destinos.find((x) => x.id === destinoId);
+    if (d) {
+      setNvDireccion(d.direccion || "");
+      setNvContacto(d.telefono || "");
+    }
+  };
 
   const crearDesdePresupuesto = (presupuestoId: string) => {
     const p = presupuestos.find((x) => x.id === presupuestoId);
     if (!p) return;
-    addOrden(buildOrdenFromPresupuesto(p, nextNumero()));
+    const base = buildOrdenFromPresupuesto(p, nextNumero());
+    const d = destinos.find((x) => x.id === p.destinoId);
+    addOrden({
+      ...base,
+      direccion: d?.direccion ?? "",
+      contacto: d?.telefono ?? "",
+      servicio: p.items.map((it) => it.nombre).join(", "),
+      fechaRelevamiento: hoy(),
+    });
     setNuevaOpen(false);
   };
 
@@ -66,11 +90,24 @@ export default function OrdenesPage() {
     setNvCliente(clientes[0]?.id ?? "");
     setNvDestino("");
     setNvResponsables([]);
+    setNvContacto("");
+    setNvServicio("");
+    setNvDireccion("");
+    setNvFechaRel(hoy());
+    setNvHoraRel("");
     setNuevaOpen(true);
   };
   const crearEnBlanco = () => {
     if (!nvCliente || !nvDestino) return;
-    addOrden(buildOrdenBlank(nvCliente, nvDestino, nextNumero(), nvResponsables));
+    const base = buildOrdenBlank(nvCliente, nvDestino, nextNumero(), nvResponsables);
+    addOrden({
+      ...base,
+      contacto: nvContacto,
+      servicio: nvServicio,
+      direccion: nvDireccion,
+      fechaRelevamiento: nvFechaRel || null,
+      horaRelevamiento: nvHoraRel,
+    });
     setNuevaOpen(false);
   };
 
@@ -268,7 +305,7 @@ export default function OrdenesPage() {
               </Select>
             </Field>
             <Field label="Destino *">
-              <Select value={nvDestino} onChange={(e) => setNvDestino(e.target.value)} disabled={!nvCliente}>
+              <Select value={nvDestino} onChange={(e) => onElegirDestino(e.target.value)} disabled={!nvCliente}>
                 <option value="">Seleccionar…</option>
                 {destinos.filter((d) => d.clienteId === nvCliente).map((d) => (<option key={d.id} value={d.id}>{d.nombre}</option>))}
               </Select>
@@ -299,6 +336,25 @@ export default function OrdenesPage() {
               })}
               {empleados.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
             </div>
+          </div>
+
+          {/* Datos del destino / visita (se traen al elegir el destino, editables) */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Dirección">
+              <TextInput value={nvDireccion} onChange={(e) => setNvDireccion(e.target.value)} placeholder="Dónde ir" />
+            </Field>
+            <Field label="Contacto en el destino">
+              <TextInput value={nvContacto} onChange={(e) => setNvContacto(e.target.value)} placeholder="Con quién hablar / teléfono" />
+            </Field>
+            <Field label="Servicio a realizar" className="sm:col-span-2">
+              <TextInput value={nvServicio} onChange={(e) => setNvServicio(e.target.value)} placeholder="Ej. Tour 360 base" />
+            </Field>
+            <Field label="Fecha de relevamiento" hint="Aparece en la agenda ese día">
+              <TextInput type="date" value={nvFechaRel} onChange={(e) => setNvFechaRel(e.target.value)} />
+            </Field>
+            <Field label="Hora">
+              <TextInput type="time" value={nvHoraRel} onChange={(e) => setNvHoraRel(e.target.value)} />
+            </Field>
           </div>
 
           {/* Opción B: desde presupuesto aprobado */}
@@ -353,6 +409,13 @@ function OrdenDetalle({
 }) {
   const [etapas, setEtapas] = useState<Etapa[]>(orden.etapas);
   const [responsables, setResponsables] = useState<string[]>(orden.responsableIds ?? []);
+  const [visita, setVisita] = useState({
+    contacto: orden.contacto ?? "",
+    servicio: orden.servicio ?? "",
+    direccion: orden.direccion ?? "",
+    fechaRelevamiento: orden.fechaRelevamiento ?? "",
+    horaRelevamiento: orden.horaRelevamiento ?? "",
+  });
   const [confirmDel, setConfirmDel] = useState(false);
 
   const update = (idx: number, patch: Partial<Etapa>) =>
@@ -371,7 +434,16 @@ function OrdenDetalle({
     );
 
   const save = () => {
-    onSave({ ...orden, responsableIds: responsables, etapas });
+    onSave({
+      ...orden,
+      responsableIds: responsables,
+      contacto: visita.contacto,
+      servicio: visita.servicio,
+      direccion: visita.direccion,
+      fechaRelevamiento: visita.fechaRelevamiento || null,
+      horaRelevamiento: visita.horaRelevamiento,
+      etapas,
+    });
     onClose();
   };
 
@@ -421,6 +493,28 @@ function OrdenDetalle({
               );
             })}
             {empleadosOptions.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
+          </div>
+        </div>
+
+        {/* Datos de la visita / relevamiento */}
+        <div className="rounded-xl border border-line bg-surface-base p-4">
+          <p className="label mb-2">Datos de la visita</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Dirección">
+              <TextInput disabled={!editable} value={visita.direccion} onChange={(e) => setVisita((v) => ({ ...v, direccion: e.target.value }))} />
+            </Field>
+            <Field label="Contacto en el destino">
+              <TextInput disabled={!editable} value={visita.contacto} onChange={(e) => setVisita((v) => ({ ...v, contacto: e.target.value }))} />
+            </Field>
+            <Field label="Servicio a realizar" className="sm:col-span-2">
+              <TextInput disabled={!editable} value={visita.servicio} onChange={(e) => setVisita((v) => ({ ...v, servicio: e.target.value }))} />
+            </Field>
+            <Field label="Fecha de relevamiento" hint="Aparece en la agenda ese día">
+              <TextInput type="date" disabled={!editable} value={visita.fechaRelevamiento} onChange={(e) => setVisita((v) => ({ ...v, fechaRelevamiento: e.target.value }))} />
+            </Field>
+            <Field label="Hora">
+              <TextInput type="time" disabled={!editable} value={visita.horaRelevamiento} onChange={(e) => setVisita((v) => ({ ...v, horaRelevamiento: e.target.value }))} />
+            </Field>
           </div>
         </div>
 

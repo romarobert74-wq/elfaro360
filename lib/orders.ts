@@ -37,7 +37,7 @@ export function normalizeOrden(o: OrdenTrabajo): OrdenTrabajo {
         notas: "",
       }
   );
-  return { ...o, responsableIds, etapas };
+  return { ...o, responsableIds, contacto: o.contacto ?? "", servicio: o.servicio ?? "", direccion: o.direccion ?? "", fechaRelevamiento: o.fechaRelevamiento ?? null, horaRelevamiento: o.horaRelevamiento ?? "", etapas };
 }
 
 function etapasVacias(responsableIds: string[] = []): Etapa[] {
@@ -60,6 +60,11 @@ export function buildOrdenFromPresupuesto(p: Presupuesto, numero: string, respon
     clienteId: p.clienteId,
     destinoId: p.destinoId,
     responsableIds,
+    contacto: "",
+    servicio: "",
+    direccion: "",
+    fechaRelevamiento: null,
+    horaRelevamiento: "",
     fechaCreacion: new Date().toISOString().slice(0, 10),
     etapas: etapasVacias(responsableIds),
   };
@@ -74,6 +79,11 @@ export function buildOrdenBlank(clienteId: string, destinoId: string, numero: st
     clienteId,
     destinoId,
     responsableIds,
+    contacto: "",
+    servicio: "",
+    direccion: "",
+    fechaRelevamiento: null,
+    horaRelevamiento: "",
     fechaCreacion: new Date().toISOString().slice(0, 10),
     etapas: etapasVacias(responsableIds),
   };

@@ -1,20 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Guard } from "@/components/layout/Guard";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/Field";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
-import { etapaLabels, etapaOrder, etapaTone, toneHex, type Tone } from "@/lib/labels";
+import { toneHex, type Tone } from "@/lib/labels";
 import { uid } from "@/lib/format";
-import type { AgendaNota, EtapaKey } from "@/lib/types";
+import type { AgendaNota } from "@/lib/types";
 
-type Tipo = "etapa" | "presupuesto" | "orden" | "nota";
+type Tipo = "orden" | "nota";
 
 interface Evento {
   date: string;
@@ -22,9 +22,7 @@ interface Evento {
   label: string;
   color: string;
   ordenId?: string;
-  presupuestoId?: string;
   notaId?: string;
-  etapa?: EtapaKey;
   empleadoIds?: string[];
   cliente?: string;
   destino?: string;
@@ -37,11 +35,11 @@ const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "
 const emptyNota = (fecha: string): AgendaNota => ({ id: "", fecha, titulo: "", nota: "", empleadoId: null });
 
 export default function AgendaPage() {
+  const router = useRouter();
   const store = useStore();
   const { ordenes, clientes, destinos, empleados, presupuestos, notasAgenda, currentUser, addNota, updateNota, removeNota, can } = store;
   const isEmpleado = currentUser?.role === "empleado";
   const editable = can("agenda", "edit") || currentUser?.role !== "empleado";
-  const [colorBy, setColorBy] = useState<"etapa" | "empleado">("etapa");
   const [selDay, setSelDay] = useState<string | null>(null);
   const [selEvent, setSelEvent] = useState<Evento | null>(null);
   const [notaForm, setNotaForm] = useState<AgendaNota | null>(null);
@@ -59,27 +57,22 @@ export default function AgendaPage() {
 
   const eventos = useMemo(() => {
     const rows: Evento[] = [];
-    // Etapas de producción
+    // Órdenes de trabajo: aparecen el día del relevamiento como Cliente / Destino / Empleado
     ordenes.forEach((o) => {
-      o.etapas.forEach((e) => {
-        if (!e.fechaEstimada) return;
-        if (isEmpleado && !(currentUser?.empleadoId && e.empleadoIds.includes(currentUser.empleadoId))) return;
-        rows.push({
-          date: e.fechaEstimada, tipo: "etapa", label: clienteName(o.clienteId), color: toneHex[etapaTone[e.key]],
-          ordenId: o.id, etapa: e.key, empleadoIds: e.empleadoIds, cliente: clienteName(o.clienteId), destino: destinoName(o.destinoId),
-        });
+      if (!o.fechaRelevamiento) return;
+      const resp = o.responsableIds ?? [];
+      if (isEmpleado && !(currentUser?.empleadoId && resp.includes(currentUser.empleadoId))) return;
+      rows.push({
+        date: o.fechaRelevamiento,
+        tipo: "orden",
+        label: `${clienteName(o.clienteId)} / ${destinoName(o.destinoId)} / ${empNames(resp)}`,
+        color: toneHex[empTone(resp[0] ?? null)],
+        ordenId: o.id,
+        empleadoIds: resp,
+        cliente: clienteName(o.clienteId),
+        destino: destinoName(o.destinoId),
       });
     });
-    if (!isEmpleado) {
-      // Órdenes (por fecha de creación)
-      ordenes.forEach((o) => {
-        rows.push({ date: o.fechaCreacion, tipo: "orden", label: `OT ${clienteName(o.clienteId)}`, color: "#03C2D1", ordenId: o.id, cliente: clienteName(o.clienteId), destino: destinoName(o.destinoId) });
-      });
-      // Presupuestos (por fecha)
-      presupuestos.forEach((p) => {
-        rows.push({ date: p.fecha, tipo: "presupuesto", label: `Presup. ${clienteName(p.clienteId)}`, color: "#6E7682", presupuestoId: p.id, cliente: clienteName(p.clienteId) });
-      });
-    }
     // Notas / tareas manuales
     notasAgenda.forEach((n) => {
       if (isEmpleado && n.empleadoId && n.empleadoId !== currentUser?.empleadoId) return;
@@ -87,10 +80,10 @@ export default function AgendaPage() {
     });
     return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordenes, presupuestos, notasAgenda, isEmpleado, currentUser]);
+  }, [ordenes, notasAgenda, isEmpleado, currentUser]);
 
-  const first = eventos.map((e) => e.date).sort()[0] ?? "2026-08-01";
-  const [ym, setYm] = useState(() => ({ y: Number(first.slice(0, 4)), m: Number(first.slice(5, 7)) - 1 }));
+  // Arranca en el mes en curso
+  const [ym, setYm] = useState(() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; });
 
   const eventosPorDia = useMemo(() => {
     const map: Record<string, Evento[]> = {};
@@ -114,13 +107,9 @@ export default function AgendaPage() {
     setYm((p) => { const nm = p.m + delta; return { y: p.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 }; });
   };
 
-  const tone = (ev: Evento): string => {
-    if (ev.tipo !== "etapa") return ev.color;
-    if (colorBy === "empleado") return toneHex[empTone(ev.empleadoIds?.[0] ?? null)];
-    return ev.color;
-  };
   const todayStr = new Date().toISOString().slice(0, 10);
   const selEvents = selDay ? eventosPorDia[selDay] ?? [] : [];
+  const ordenSel = selEvent?.ordenId ? ordenes.find((o) => o.id === selEvent.ordenId) : undefined;
 
   const abrirNuevaNota = (fecha: string) => editable && setNotaForm(emptyNota(fecha));
   const abrirNota = (id: string) => {
@@ -138,16 +127,7 @@ export default function AgendaPage() {
     <Guard module="agenda">
       <PageHeader
         title="Agenda"
-        subtitle={isEmpleado ? "Tus etapas asignadas" : "Doble click en un día para agregar una nota o tarea"}
-        actions={
-          <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-raised p-1">
-            {(["etapa", "empleado"] as const).map((c) => (
-              <button key={c} onClick={() => setColorBy(c)} className={cn("rounded-md px-3 py-1 text-xs font-medium capitalize transition", colorBy === c ? "bg-brand/15 text-brand" : "text-content-muted")}>
-                Por {c}
-              </button>
-            ))}
-          </div>
-        }
+        subtitle={isEmpleado ? "Tus trabajos: qué día y a dónde ir" : "Órdenes por día de relevamiento. Doble click en un día para agregar una nota."}
       />
 
       <div className="mb-4 flex items-center justify-between">
@@ -159,18 +139,12 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* Leyenda */}
+      {/* Leyenda: colores por empleado */}
       <div className="mb-4 flex flex-wrap gap-2 text-xs text-content-muted">
-        {colorBy === "etapa"
-          ? etapaOrder.map((k) => (<span key={k} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: toneHex[etapaTone[k]] }} />{etapaLabels[k]}</span>))
-          : empleados.map((e) => (<span key={e.id} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: toneHex[empTone(e.id)] }} />{e.nombre}</span>))}
-        {!isEmpleado && (
-          <>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-robin" />Órdenes</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "#6E7682" }} />Presupuestos</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-spectrum-yellow" />Notas/tareas</span>
-          </>
-        )}
+        {empleados.map((e) => (
+          <span key={e.id} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: toneHex[empTone(e.id)] }} />{e.nombre}</span>
+        ))}
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-spectrum-yellow" />Notas / tareas</span>
       </div>
 
       <div className="card overflow-hidden p-2 sm:p-3">
@@ -197,7 +171,7 @@ export default function AgendaPage() {
                 <span className={cn("text-xs font-medium", isToday ? "text-brand" : "text-content-muted")}>{day}</span>
                 <div className="flex flex-col gap-0.5">
                   {evs.slice(0, 3).map((ev, j) => (
-                    <span key={j} className="truncate rounded px-1 py-0.5 text-[9px] font-medium sm:text-[10px]" style={{ background: `${tone(ev)}22`, color: tone(ev) }} title={ev.label}>
+                    <span key={j} className="truncate rounded px-1 py-0.5 text-[9px] font-medium sm:text-[10px]" style={{ background: `${ev.color}22`, color: ev.color }} title={ev.label}>
                       {ev.tipo === "nota" ? "📝 " : ""}{ev.label}
                     </span>
                   ))}
@@ -228,35 +202,40 @@ export default function AgendaPage() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{ev.tipo === "nota" ? "📝 " : ""}{ev.label}</p>
-                  <p className="text-xs text-content-subtle">
-                    {ev.tipo === "etapa" && `${etapaLabels[ev.etapa!]} · ${empNames(ev.empleadoIds ?? [])}`}
-                    {ev.tipo === "orden" && "Orden de trabajo"}
-                    {ev.tipo === "presupuesto" && "Presupuesto"}
-                    {ev.tipo === "nota" && "Nota / tarea"}
-                  </p>
+                  <p className="text-xs text-content-subtle">{ev.tipo === "orden" ? "Orden de trabajo — tocá para ver los datos" : "Nota / tarea"}</p>
                 </div>
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: tone(ev) }} />
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: ev.color }} />
               </button>
             ))}
           </div>
         </Modal>
       )}
 
-      {/* Detalle de una etapa/orden: cliente, servicios, empleados */}
-      {selEvent && (selEvent.tipo === "etapa" || selEvent.tipo === "orden") && (
-        <Modal open onClose={() => setSelEvent(null)} title={selEvent.cliente ?? "Orden"} subtitle={selEvent.destino}>
+      {/* Detalle de la orden del día: datos para ir a hacer el relevamiento */}
+      {selEvent && selEvent.tipo === "orden" && ordenSel && (
+        <Modal
+          open
+          onClose={() => setSelEvent(null)}
+          title={`${clienteName(ordenSel.clienteId)} · ${destinoName(ordenSel.destinoId)}`}
+          subtitle={ordenSel.numero}
+          footer={<><button className="btn-ghost" onClick={() => setSelEvent(null)}>Cerrar</button><button className="btn-primary" onClick={() => router.push("/ordenes")}><Icon name="external" size={16} /> Abrir orden</button></>}
+        >
           <div className="space-y-4">
-            {selEvent.tipo === "etapa" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={etapaTone[selEvent.etapa!]} dot>{etapaLabels[selEvent.etapa!]}</Badge>
-                <span className="text-sm text-content-muted"><Icon name="empleados" size={14} className="mr-1 inline" />{empNames(selEvent.empleadoIds ?? [])}</span>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-content-muted"><Icon name="empleados" size={14} className="mr-1 inline" />{empNames(ordenSel.responsableIds ?? [])}</span>
+              {ordenSel.horaRelevamiento && <span className="text-content-muted"><Icon name="clock" size={14} className="mr-1 inline" />{ordenSel.horaRelevamiento}</span>}
+            </div>
+
+            <div className="grid gap-2 text-sm">
+              {ordenSel.direccion && <p><span className="text-content-subtle">Dirección: </span>{ordenSel.direccion}</p>}
+              {ordenSel.contacto && <p><span className="text-content-subtle">Contacto: </span>{ordenSel.contacto}</p>}
+              {ordenSel.servicio && <p><span className="text-content-subtle">Servicio: </span>{ordenSel.servicio}</p>}
+            </div>
+
             <div>
-              <p className="label">Servicios de esta orden</p>
+              <p className="label">Servicios del presupuesto</p>
               {(() => {
-                const orden = ordenes.find((o) => o.id === selEvent.ordenId);
-                const pres = presupuestos.find((p) => p.id === orden?.presupuestoId);
+                const pres = presupuestos.find((p) => p.id === ordenSel.presupuestoId);
                 if (!pres || pres.items.length === 0) return <p className="text-sm text-content-muted">Sin servicios cargados.</p>;
                 return (
                   <div className="space-y-1.5">

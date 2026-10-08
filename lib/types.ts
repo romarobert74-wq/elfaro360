@@ -182,6 +182,12 @@ export interface OrdenTrabajo {
   clienteId: string;
   destinoId: string;
   responsableIds: string[]; // empleado(s) a cargo de toda la orden
+  // Datos de la visita / relevamiento (se traen del destino al crear la orden)
+  contacto: string; // con quién hablar en el destino
+  servicio: string; // servicio a realizar
+  direccion: string; // dónde ir
+  fechaRelevamiento: string | null; // día de inicio del relevamiento (aparece en la agenda)
+  horaRelevamiento: string; // hora de inicio
   etapas: Etapa[];
   fechaCreacion: string;
 }
