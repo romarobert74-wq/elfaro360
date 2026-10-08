@@ -59,6 +59,8 @@ export default function PagosPage() {
   const [toDelete, setToDelete] = useState<PagoEmpleado | null>(null);
   const [resumenOpen, setResumenOpen] = useState(false);
   const [resumenEmp, setResumenEmp] = useState<string>("");
+  const [desde, setDesde] = useState<string>("");
+  const [hasta, setHasta] = useState<string>("");
 
   const visibles = useMemo(() => {
     let rows = pagosEmpleados;
@@ -87,26 +89,47 @@ export default function PagosPage() {
   };
 
   // ----- Resumen por empleado + compartir por WhatsApp -----
+  // Detalle del pago: título (presupuesto · cliente, o concepto) y subtítulo (destino · etapas · concepto)
+  const detallePago = (p: PagoEmpleado) => {
+    if (p.ordenId) {
+      const titulo = `${presNumDeOrden(p.ordenId)} · ${clienteDePago(p)}`;
+      const sub = [destinoDePago(p), p.etapas.map(etapaPagoLabel).join(", "), p.concepto]
+        .filter((x) => x && x !== "—")
+        .join(" · ");
+      return { titulo, sub };
+    }
+    // Gasto general (sin orden): el concepto es lo principal
+    return { titulo: p.concepto || "Gasto general", sub: p.etapas.length ? p.etapas.map(etapaPagoLabel).join(", ") : "" };
+  };
   const descPago = (p: PagoEmpleado) => {
-    const base = p.ordenId ? `${presNumDeOrden(p.ordenId)} · ${clienteDePago(p)}` : (p.concepto || "Gasto general");
-    const et = p.etapas.length ? ` (${p.etapas.map(etapaPagoLabel).join(", ")})` : "";
-    return base + et;
+    const { titulo, sub } = detallePago(p);
+    return sub ? `${titulo} (${sub})` : titulo;
+  };
+  const enRango = (f: string | null) => {
+    if (!desde && !hasta) return true;
+    if (!f) return false; // sin fecha de pago no entra cuando hay filtro
+    if (desde && f < desde) return false;
+    if (hasta && f > hasta) return false;
+    return true;
   };
   const resumenData = (empId: string) => {
     const rows = pagosEmpleados.filter((p) => p.empleadoId === empId);
-    const pagados = rows.filter((p) => p.estado === "pagado");
+    const pagados = rows.filter((p) => p.estado === "pagado" && enRango(p.fecha));
     const pendientes = rows.filter((p) => p.estado === "pendiente");
     return { pagados, pendientes, totalPag: pagados.reduce((a, p) => a + p.monto, 0), totalPen: pendientes.reduce((a, p) => a + p.monto, 0) };
   };
   const abrirResumen = () => {
     setResumenEmp(filtroEmp !== "todos" ? filtroEmp : (empleados[0]?.id ?? ""));
+    setDesde("");
+    setHasta("");
     setResumenOpen(true);
   };
   const textoWhatsapp = (empId: string) => {
     const { pagados, pendientes, totalPag, totalPen } = resumenData(empId);
     const L: string[] = [];
     L.push(`*Resumen de pagos — ${empName(empId)}*`);
-    L.push(formatDate(new Date().toISOString().slice(0, 10)));
+    if (desde || hasta) L.push(`Período: ${desde ? formatDate(desde) : "inicio"} a ${hasta ? formatDate(hasta) : "hoy"}`);
+    else L.push(formatDate(new Date().toISOString().slice(0, 10)));
     L.push("");
     L.push("✅ *PAGADO*");
     pagados.length ? pagados.forEach((p) => L.push(`• ${descPago(p)} — ${formatCurrency(p.monto)}${p.fecha ? " (" + formatDate(p.fecha) + ")" : ""}`)) : L.push("• (nada)");
@@ -282,23 +305,41 @@ export default function PagosPage() {
                 {empleados.map((e) => (<option key={e.id} value={e.id}>{e.nombre}</option>))}
               </Select>
             </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Desde">
+                <TextInput type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+              </Field>
+              <Field label="Hasta">
+                <TextInput type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+              </Field>
+            </div>
+            {(desde || hasta) && (
+              <button className="text-xs text-brand" onClick={() => { setDesde(""); setHasta(""); }}>Limpiar fechas</button>
+            )}
             {resumenEmp && (() => {
               const { pagados, pendientes, totalPag, totalPen } = resumenData(resumenEmp);
-              const fila = (p: PagoEmpleado) => (
-                <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-base px-3 py-2 text-sm">
-                  <span className="min-w-0 truncate">{descPago(p)}</span>
-                  <span className="shrink-0 tabular-nums text-content-muted">{formatCurrency(p.monto)}</span>
-                </div>
-              );
+              const fila = (p: PagoEmpleado) => {
+                const d = detallePago(p);
+                return (
+                  <div key={p.id} className="flex items-start justify-between gap-2 rounded-lg border border-line bg-surface-base px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{d.titulo}</p>
+                      {d.sub && <p className="truncate text-xs text-content-subtle">{d.sub}</p>}
+                      {p.fecha && <p className="text-[11px] text-content-subtle">{formatDate(p.fecha)}</p>}
+                    </div>
+                    <span className="shrink-0 tabular-nums text-content-muted">{formatCurrency(p.monto)}</span>
+                  </div>
+                );
+              };
               return (
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Pagado</p><p className="font-display text-lg font-bold text-spectrum-green">{formatCurrency(totalPag)}</p></div>
+                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Pagado{(desde || hasta) ? " (período)" : ""}</p><p className="font-display text-lg font-bold text-spectrum-green">{formatCurrency(totalPag)}</p></div>
                     <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Falta pagar</p><p className="font-display text-lg font-bold text-spectrum-orange">{formatCurrency(totalPen)}</p></div>
                   </div>
                   <div>
                     <p className="label mb-1">Pagado</p>
-                    {pagados.length ? <div className="space-y-1">{pagados.map(fila)}</div> : <p className="text-sm text-content-muted">Nada pagado aún.</p>}
+                    {pagados.length ? <div className="space-y-1">{pagados.map(fila)}</div> : <p className="text-sm text-content-muted">Nada pagado {(desde || hasta) ? "en el período" : "aún"}.</p>}
                   </div>
                   <div>
                     <p className="label mb-1">Pendiente</p>
