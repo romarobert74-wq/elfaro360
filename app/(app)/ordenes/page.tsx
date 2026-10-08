@@ -26,6 +26,8 @@ export default function OrdenesPage() {
   const { ordenes, clientes, destinos, empleados, presupuestos, currentUser, updateOrden, addOrden, removeOrden, can } = store;
   const editable = can("ordenes", "edit");
   const isEmpleado = currentUser?.role === "empleado";
+  // Los empleados pueden mover sus tarjetas por el tablero aunque no editen la orden.
+  const puedeMover = editable || isEmpleado;
   const [open, setOpen] = useState<OrdenTrabajo | null>(null);
   const [period, setPeriod] = useState<PeriodValue>({ year: null, month: null });
   const [nuevaOpen, setNuevaOpen] = useState(false);
@@ -184,14 +186,14 @@ export default function OrdenesPage() {
           {etapaOrder.map((key) => {
             const color = toneHex[etapaTone[key]];
             const cards = porColumna[key] ?? [];
-            const colActiva = !!dragId && editable;
+            const colActiva = !!dragId && puedeMover;
             return (
               <div
                 key={key}
                 onDragOver={(e) => { if (colActiva) e.preventDefault(); }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  if (!editable || !dragId) return;
+                  if (!puedeMover || !dragId) return;
                   const o = ordenes.find((x) => x.id === dragId);
                   if (o) moverA(o, key);
                   setDragId(null);
@@ -215,12 +217,12 @@ export default function OrdenesPage() {
                     return (
                       <div
                         key={o.id}
-                        draggable={editable}
+                        draggable={puedeMover}
                         onDragStart={() => setDragId(o.id)}
                         onDragEnd={() => setDragId(null)}
                         className={cn(
                           "rounded-lg border border-line bg-surface-raised p-3 transition hover:border-brand/40",
-                          editable && "cursor-grab active:cursor-grabbing"
+                          puedeMover && "cursor-grab active:cursor-grabbing"
                         )}
                       >
                         <button onClick={() => setOpen(o)} className="w-full text-left">
@@ -241,7 +243,7 @@ export default function OrdenesPage() {
                             </div>
                           )}
                         </button>
-                        {editable && (
+                        {puedeMover && (
                           <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
                             <button
                               onClick={() => idx > 0 && moverA(o, etapaOrder[idx - 1])}

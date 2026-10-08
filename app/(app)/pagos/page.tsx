@@ -57,6 +57,8 @@ export default function PagosPage() {
     fecha: null,
   });
   const [toDelete, setToDelete] = useState<PagoEmpleado | null>(null);
+  const [resumenOpen, setResumenOpen] = useState(false);
+  const [resumenEmp, setResumenEmp] = useState<string>("");
 
   const visibles = useMemo(() => {
     let rows = pagosEmpleados;
@@ -82,6 +84,48 @@ export default function PagosPage() {
     if (editing) updatePago({ ...form, id: editing.id });
     else addPago({ ...form, id: uid("pag") });
     setModal(false);
+  };
+
+  // ----- Resumen por empleado + compartir por WhatsApp -----
+  const descPago = (p: PagoEmpleado) => {
+    const base = p.ordenId ? `${presNumDeOrden(p.ordenId)} · ${clienteDePago(p)}` : (p.concepto || "Gasto general");
+    const et = p.etapas.length ? ` (${p.etapas.map(etapaPagoLabel).join(", ")})` : "";
+    return base + et;
+  };
+  const resumenData = (empId: string) => {
+    const rows = pagosEmpleados.filter((p) => p.empleadoId === empId);
+    const pagados = rows.filter((p) => p.estado === "pagado");
+    const pendientes = rows.filter((p) => p.estado === "pendiente");
+    return { pagados, pendientes, totalPag: pagados.reduce((a, p) => a + p.monto, 0), totalPen: pendientes.reduce((a, p) => a + p.monto, 0) };
+  };
+  const abrirResumen = () => {
+    setResumenEmp(filtroEmp !== "todos" ? filtroEmp : (empleados[0]?.id ?? ""));
+    setResumenOpen(true);
+  };
+  const textoWhatsapp = (empId: string) => {
+    const { pagados, pendientes, totalPag, totalPen } = resumenData(empId);
+    const L: string[] = [];
+    L.push(`*Resumen de pagos — ${empName(empId)}*`);
+    L.push(formatDate(new Date().toISOString().slice(0, 10)));
+    L.push("");
+    L.push("✅ *PAGADO*");
+    pagados.length ? pagados.forEach((p) => L.push(`• ${descPago(p)} — ${formatCurrency(p.monto)}${p.fecha ? " (" + formatDate(p.fecha) + ")" : ""}`)) : L.push("• (nada)");
+    L.push(`Subtotal: ${formatCurrency(totalPag)}`);
+    L.push("");
+    L.push("⏳ *PENDIENTE*");
+    pendientes.length ? pendientes.forEach((p) => L.push(`• ${descPago(p)} — ${formatCurrency(p.monto)}`)) : L.push("• (nada)");
+    L.push(`Subtotal: ${formatCurrency(totalPen)}`);
+    L.push("");
+    L.push(`*Total pagado:* ${formatCurrency(totalPag)}`);
+    L.push(`*Falta pagar:* ${formatCurrency(totalPen)}`);
+    return L.join("\n");
+  };
+  const compartirWhatsapp = (empId: string) => {
+    const emp = empleados.find((e) => e.id === empId);
+    const num = (emp?.telefono || "").replace(/[^\d]/g, "");
+    const texto = encodeURIComponent(textoWhatsapp(empId));
+    const url = num ? `https://wa.me/${num}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    try { window.open(url, "_blank", "noopener"); } catch {}
   };
 
   const columns: Column<PagoEmpleado>[] = [
@@ -125,7 +169,12 @@ export default function PagosPage() {
       <PageHeader
         title={isEmpleado ? "Mis Pagos" : "Pagos a Empleados"}
         subtitle={isEmpleado ? "Lo que se te debe y lo pagado" : "Registro de pagos por etapa de trabajo"}
-        actions={editable && <button className="btn-primary" onClick={openNew}><Icon name="plus" size={16} /> Registrar pago</button>}
+        actions={!isEmpleado && (
+          <div className="flex items-center gap-2">
+            <button className="btn-ghost" onClick={abrirResumen} disabled={empleados.length === 0}><Icon name="whatsapp" size={16} /> Resumen</button>
+            {editable && <button className="btn-primary" onClick={openNew}><Icon name="plus" size={16} /> Registrar pago</button>}
+          </div>
+        )}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4">
@@ -212,6 +261,55 @@ export default function PagosPage() {
           </Field>
         </div>
       </Modal>
+
+      {/* Resumen por empleado + compartir por WhatsApp */}
+      {resumenOpen && (
+        <Modal
+          open
+          onClose={() => setResumenOpen(false)}
+          title="Resumen por empleado"
+          subtitle="Lo pagado y lo que falta — listo para compartir por WhatsApp"
+          footer={
+            <>
+              <button className="btn-ghost" onClick={() => setResumenOpen(false)}>Cerrar</button>
+              <button className="btn-primary" onClick={() => compartirWhatsapp(resumenEmp)} disabled={!resumenEmp}><Icon name="whatsapp" size={16} /> Compartir por WhatsApp</button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <Field label="Empleado">
+              <Select value={resumenEmp} onChange={(e) => setResumenEmp(e.target.value)}>
+                {empleados.map((e) => (<option key={e.id} value={e.id}>{e.nombre}</option>))}
+              </Select>
+            </Field>
+            {resumenEmp && (() => {
+              const { pagados, pendientes, totalPag, totalPen } = resumenData(resumenEmp);
+              const fila = (p: PagoEmpleado) => (
+                <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-base px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate">{descPago(p)}</span>
+                  <span className="shrink-0 tabular-nums text-content-muted">{formatCurrency(p.monto)}</span>
+                </div>
+              );
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Pagado</p><p className="font-display text-lg font-bold text-spectrum-green">{formatCurrency(totalPag)}</p></div>
+                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Falta pagar</p><p className="font-display text-lg font-bold text-spectrum-orange">{formatCurrency(totalPen)}</p></div>
+                  </div>
+                  <div>
+                    <p className="label mb-1">Pagado</p>
+                    {pagados.length ? <div className="space-y-1">{pagados.map(fila)}</div> : <p className="text-sm text-content-muted">Nada pagado aún.</p>}
+                  </div>
+                  <div>
+                    <p className="label mb-1">Pendiente</p>
+                    {pendientes.length ? <div className="space-y-1">{pendientes.map(fila)}</div> : <p className="text-sm text-content-muted">Sin pendientes.</p>}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </Modal>
+      )}
 
       <ConfirmDialog
         open={!!toDelete}

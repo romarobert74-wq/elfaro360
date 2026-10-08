@@ -128,7 +128,16 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       pagos.setItems(pa.map(normalizePago));
       cobros.setItems(cb);
       notas.setItems(nt);
-      if (perms) setPermissions(perms);
+      // Combina la matriz guardada con los valores por defecto, para que los
+      // módulos nuevos (ej. relevamientos) aparezcan aunque Firestore tenga una
+      // matriz vieja. Lo guardado tiene prioridad sobre el default.
+      if (perms) {
+        const base = clone(mock.permissionMatrix) as PermissionMatrix;
+        (Object.keys(perms) as (keyof PermissionMatrix)[]).forEach((role) => {
+          base[role] = { ...base[role], ...perms[role] };
+        });
+        setPermissions(base);
+      }
       if (sett) setSettingsState(sett);
       setDataReady(true);
     })().catch((e) => {
