@@ -161,8 +161,7 @@ export interface Presupuesto {
 export type EtapaKey =
   | "aprobado"
   | "relevamiento"
-  | "edicion"
-  | "publicacion"
+  | "armado_tour"
   | "entregable";
 
 export type EstadoEtapa = "pendiente" | "en_curso" | "completado";

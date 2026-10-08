@@ -13,7 +13,6 @@ import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
 import { buildOrdenBlank, buildOrdenFromPresupuesto } from "@/lib/orders";
-import { formatDate } from "@/lib/format";
 import {
   estadoEtapaLabels,
   estadoEtapaTone,
@@ -35,6 +34,7 @@ export default function OrdenesPage() {
   const [nvCliente, setNvCliente] = useState("");
   const [nvDestino, setNvDestino] = useState("");
   const [nvResponsables, setNvResponsables] = useState<string[]>([]);
+  const [dragId, setDragId] = useState<string | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
   const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
@@ -89,11 +89,44 @@ export default function OrdenesPage() {
     return Math.round((done / o.etapas.length) * 100);
   };
 
+  // Etapa "actual" de una orden = primera etapa no completada (o la última si está todo listo).
+  const indiceActual = (o: OrdenTrabajo) => {
+    const idx = o.etapas.findIndex((e) => e.estado !== "completado");
+    return idx === -1 ? etapaOrder.length - 1 : idx;
+  };
+  const etapaActualKey = (o: OrdenTrabajo) => etapaOrder[indiceActual(o)];
+
+  // Mueve una orden a una etapa: completa las anteriores, pone en curso la actual.
+  // Mover a la última etapa (Entregable) la marca como completada (100%).
+  const moverA = (o: OrdenTrabajo, targetKey: string) => {
+    const targetIdx = etapaOrder.indexOf(targetKey as (typeof etapaOrder)[number]);
+    if (targetIdx < 0) return;
+    const last = etapaOrder.length - 1;
+    const etapas = o.etapas.map((e) => {
+      const i = etapaOrder.indexOf(e.key);
+      let estado: EstadoEtapa;
+      if (i < targetIdx) estado = "completado";
+      else if (i === targetIdx) estado = targetIdx === last ? "completado" : "en_curso";
+      else estado = "pendiente";
+      return { ...e, estado };
+    });
+    updateOrden({ ...o, etapas });
+  };
+
+  // Agrupa las órdenes visibles por su etapa actual (columnas del tablero).
+  const porColumna = useMemo(() => {
+    const map: Record<string, OrdenTrabajo[]> = {};
+    etapaOrder.forEach((k) => (map[k] = []));
+    visibles.forEach((o) => { map[etapaActualKey(o)].push(o); });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibles]);
+
   return (
     <Guard module="ordenes">
       <PageHeader
         title="Órdenes de Trabajo"
-        subtitle="Pipeline: Aprobado → Relevamiento → Edición → Publicación → Entregable"
+        subtitle="Arrastrá las tarjetas entre fases: Aprobado → Relevamiento → Armado de tour → Entregable"
         actions={
           editable && (
             <button className="btn-primary" onClick={abrirNueva} disabled={clientes.length === 0}>
@@ -112,68 +145,90 @@ export default function OrdenesPage() {
       {visibles.length === 0 ? (
         <EmptyState icon="ordenes" title="Sin órdenes" description="Las órdenes se generan al aprobar un presupuesto, o creá una manual desde 'Nueva orden'." />
       ) : (
-        <div className="grid gap-4">
-          {visibles.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setOpen(o)}
-              className="card group p-5 text-left transition hover:border-brand/40"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {etapaOrder.map((key) => {
+            const color = toneHex[etapaTone[key]];
+            const cards = porColumna[key] ?? [];
+            const colActiva = !!dragId && editable;
+            return (
+              <div
+                key={key}
+                onDragOver={(e) => { if (colActiva) e.preventDefault(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!editable || !dragId) return;
+                  const o = ordenes.find((x) => x.id === dragId);
+                  if (o) moverA(o, key);
+                  setDragId(null);
+                }}
+                className={cn(
+                  "flex w-72 flex-none flex-col rounded-xl border bg-surface-base/40 transition",
+                  colActiva ? "border-dashed border-brand/50" : "border-line"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-base font-bold">{o.numero}</span>
-                    <Badge tone="gray">{progreso(o)}%</Badge>
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+                    <span className="font-display text-sm font-bold">{etapaLabels[key]}</span>
                   </div>
-                  <p className="mt-0.5 text-sm text-content-muted">{clienteName(o.clienteId)} · {destinoName(o.destinoId)}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                    <Icon name="empleados" size={12} className="text-content-subtle" />
-                    {responsablesNombres(o.responsableIds).length > 0 ? (
-                      responsablesNombres(o.responsableIds).map((n) => (
-                        <span key={n} className="rounded-full bg-brand/12 px-2 py-0.5 text-[11px] font-medium text-brand">{n}</span>
-                      ))
-                    ) : (
-                      <span className="text-[11px] text-content-subtle">Sin responsable</span>
-                    )}
-                  </div>
+                  <Badge tone="gray">{cards.length}</Badge>
                 </div>
-                <span className="text-content-subtle transition group-hover:translate-x-0.5 group-hover:text-brand">
-                  <Icon name="chevronRight" size={18} />
-                </span>
-              </div>
-
-              {/* Pipeline visual */}
-              <div className="mt-4 flex items-center gap-1">
-                {etapaOrder.map((key, i) => {
-                  const etapa = o.etapas.find((e) => e.key === key)!;
-                  const color = toneHex[etapaTone[key]];
-                  const done = etapa.estado === "completado";
-                  const active = etapa.estado === "en_curso";
-                  const mine = isEmpleado && !!currentUser?.empleadoId && etapa.empleadoIds.includes(currentUser.empleadoId);
-                  return (
-                    <div key={key} className="flex flex-1 items-center gap-1">
-                      <div className="flex-1">
-                        <div
-                          className="h-1.5 w-full rounded-full transition"
-                          style={{ background: done || active ? color : "rgb(var(--line))", opacity: done ? 1 : active ? 0.7 : 1 }}
-                        />
-                        <div className="mt-1.5 flex items-center gap-1">
-                          <span
-                            className={cn("h-2 w-2 rounded-full", (done || active) ? "" : "opacity-40")}
-                            style={{ background: color }}
-                          />
-                          <span className={cn("truncate text-[10px]", mine ? "font-bold text-content" : "text-content-subtle")}>
-                            {etapaLabels[key]}
-                          </span>
-                        </div>
+                <div className="flex min-h-[90px] flex-col gap-2 p-2">
+                  {cards.map((o) => {
+                    const idx = indiceActual(o);
+                    const nombres = responsablesNombres(o.responsableIds);
+                    return (
+                      <div
+                        key={o.id}
+                        draggable={editable}
+                        onDragStart={() => setDragId(o.id)}
+                        onDragEnd={() => setDragId(null)}
+                        className={cn(
+                          "rounded-lg border border-line bg-surface-raised p-3 transition hover:border-brand/40",
+                          editable && "cursor-grab active:cursor-grabbing"
+                        )}
+                      >
+                        <button onClick={() => setOpen(o)} className="w-full text-left">
+                          <p className="font-display text-sm font-bold leading-tight">{destinoName(o.destinoId)}</p>
+                          <p className="text-xs text-content-muted">{clienteName(o.clienteId)}</p>
+                          <p className="mt-0.5 text-[10px] text-content-subtle">{o.numero} · {progreso(o)}%</p>
+                          {nombres.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {nombres.map((n) => (
+                                <span key={n} className="rounded-full bg-brand/12 px-2 py-0.5 text-[10px] font-medium text-brand">{n}</span>
+                              ))}
+                            </div>
+                          )}
+                        </button>
+                        {editable && (
+                          <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+                            <button
+                              onClick={() => idx > 0 && moverA(o, etapaOrder[idx - 1])}
+                              disabled={idx === 0}
+                              className="rounded-md p-1 text-content-muted transition enabled:hover:bg-surface-overlay enabled:hover:text-brand disabled:opacity-30"
+                              title="Fase anterior"
+                            >
+                              <Icon name="arrowLeft" size={14} />
+                            </button>
+                            <span className="text-[10px] text-content-subtle">mover</span>
+                            <button
+                              onClick={() => idx < etapaOrder.length - 1 && moverA(o, etapaOrder[idx + 1])}
+                              disabled={idx === etapaOrder.length - 1}
+                              className="rounded-md p-1 text-content-muted transition enabled:hover:bg-surface-overlay enabled:hover:text-brand disabled:opacity-30"
+                              title="Fase siguiente"
+                            >
+                              <Icon name="arrowRight" size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      {i < etapaOrder.length - 1 && <span className="text-content-subtle/40">›</span>}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                  {cards.length === 0 && <p className="px-2 py-5 text-center text-xs text-content-subtle">Sin órdenes</p>}
+                </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
 

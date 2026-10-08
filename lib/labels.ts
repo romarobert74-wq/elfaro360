@@ -98,24 +98,21 @@ export const estadoPresupuestoTone: Record<EstadoPresupuesto, Tone> = {
 export const etapaLabels: Record<EtapaKey, string> = {
   aprobado: "Aprobado",
   relevamiento: "Relevamiento",
-  edicion: "Edición",
-  publicacion: "Publicación",
+  armado_tour: "Armado de tour",
   entregable: "Entregable",
 };
 
 export const etapaOrder: EtapaKey[] = [
   "aprobado",
   "relevamiento",
-  "edicion",
-  "publicacion",
+  "armado_tour",
   "entregable",
 ];
 
 export const etapaTone: Record<EtapaKey, Tone> = {
   aprobado: "navy",
   relevamiento: "red",
-  edicion: "yellow",
-  publicacion: "violet",
+  armado_tour: "yellow",
   entregable: "green",
 };
 

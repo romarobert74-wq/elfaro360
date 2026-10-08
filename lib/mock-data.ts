@@ -447,8 +447,7 @@ export const ordenes: OrdenTrabajo[] = [
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
       { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
-      { key: "edicion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
-      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "armado_tour", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
       { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
@@ -463,8 +462,7 @@ export const ordenes: OrdenTrabajo[] = [
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
       { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "edicion", empleadoIds: ["emp-3"], fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-14", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "armado_tour", empleadoIds: ["emp-3"], fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
       { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
@@ -477,9 +475,9 @@ export const relevamientos: Relevamiento[] = [];
 export const pagosEmpleados: PagoEmpleado[] = [
   { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
   { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["relevamiento"], concepto: "", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
-  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapas: ["edicion"], concepto: "", monto: 26000, estado: "pendiente", fecha: null },
+  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapas: ["armado_tour"], concepto: "", monto: 26000, estado: "pendiente", fecha: null },
   { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pendiente", fecha: null },
-  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapas: ["edicion"], concepto: "", monto: 20000, estado: "pendiente", fecha: null },
+  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapas: ["armado_tour"], concepto: "", monto: 20000, estado: "pendiente", fecha: null },
 ];
 
 // ---------- Cobros ----------
