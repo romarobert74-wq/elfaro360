@@ -87,6 +87,7 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [loadOk, setLoadOk] = useState(false); // true solo si la carga inicial de datos funcionó
   const [authError, setAuthError] = useState<string | null>(null);
   const loading = !authReady || !dataReady;
 
@@ -139,9 +140,11 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
         setPermissions(base);
       }
       if (sett) setSettingsState(sett);
+      setLoadOk(true);
       setDataReady(true);
     })().catch((e) => {
       console.error("[firebase] carga inicial", e);
+      setLoadOk(false);
       setDataReady(true);
     });
     return () => {
@@ -176,16 +179,21 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
     if (found) {
       setCurrentUser(found);
       setAuthError(null);
-    } else if (users.items.length === 0) {
-      // Bootstrap: base vacía → el primer usuario autenticado entra como super_admin
-      // para poder correr el seed inicial (/configuracion/seed).
+    } else if (loadOk && users.items.length === 0) {
+      // Bootstrap: base REALMENTE vacía (y la carga funcionó) → el primer usuario
+      // autenticado entra como super_admin para poder correr el seed inicial.
       setCurrentUser({ id: "bootstrap", nombre: authUser.displayName || email, email, role: "super_admin", activo: true });
       setAuthError(null);
+    } else if (!loadOk) {
+      // La carga de datos falló (reglas de Firestore, conexión, etc.). NO damos
+      // super_admin: mostramos error para que se revise, sin escalar permisos.
+      setCurrentUser(null);
+      setAuthError("No se pudieron cargar los datos. Revisá las Reglas de Firestore (deben permitir lectura a usuarios autenticados) y volvé a intentar.");
     } else {
       setCurrentUser(null);
       setAuthError("Tu cuenta no está autorizada en El Faro 360. Pedile a un administrador que te dé de alta.");
     }
-  }, [authUser, authReady, dataReady, users.items]);
+  }, [authUser, authReady, dataReady, loadOk, users.items]);
 
   const login = useCallback((_userId: string) => {
     // Demo (modo mock). En Firebase se usa loginWithEmail / loginWithGoogle.
