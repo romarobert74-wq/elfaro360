@@ -34,10 +34,13 @@ export default function OrdenesPage() {
   const [nuevaOpen, setNuevaOpen] = useState(false);
   const [nvCliente, setNvCliente] = useState("");
   const [nvDestino, setNvDestino] = useState("");
+  const [nvResponsables, setNvResponsables] = useState<string[]>([]);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
   const destinoName = (id: string) => destinos.find((d) => d.id === id)?.nombre ?? "—";
   const empName = (id: string | null) => empleados.find((e) => e.id === id)?.nombre ?? null;
+  const responsablesNombres = (ids: string[]) =>
+    ids.map((id) => empName(id)).filter(Boolean) as string[];
 
   const years = useMemo(
     () => Array.from(new Set(ordenes.map((o) => Number(o.fechaCreacion.slice(0, 4))))).sort((a, b) => b - a),
@@ -62,20 +65,21 @@ export default function OrdenesPage() {
   const abrirNueva = () => {
     setNvCliente(clientes[0]?.id ?? "");
     setNvDestino("");
+    setNvResponsables([]);
     setNuevaOpen(true);
   };
   const crearEnBlanco = () => {
     if (!nvCliente || !nvDestino) return;
-    addOrden(buildOrdenBlank(nvCliente, nvDestino, nextNumero()));
+    addOrden(buildOrdenBlank(nvCliente, nvDestino, nextNumero(), nvResponsables));
     setNuevaOpen(false);
   };
 
-  // Empleado ve solo las órdenes donde tiene alguna etapa asignada
+  // Empleado ve solo las órdenes de las que es responsable (o tiene alguna etapa asignada)
   const visibles = useMemo(() => {
     let rows = ordenes;
     if (isEmpleado && currentUser?.empleadoId) {
       const me = currentUser.empleadoId;
-      rows = rows.filter((o) => o.etapas.some((e) => e.empleadoIds.includes(me)));
+      rows = rows.filter((o) => o.responsableIds.includes(me) || o.etapas.some((e) => e.empleadoIds.includes(me)));
     }
     return rows.filter((o) => matchPeriod(o.fechaCreacion, period));
   }, [ordenes, isEmpleado, currentUser, period]);
@@ -122,6 +126,16 @@ export default function OrdenesPage() {
                     <Badge tone="gray">{progreso(o)}%</Badge>
                   </div>
                   <p className="mt-0.5 text-sm text-content-muted">{clienteName(o.clienteId)} · {destinoName(o.destinoId)}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    <Icon name="empleados" size={12} className="text-content-subtle" />
+                    {responsablesNombres(o.responsableIds).length > 0 ? (
+                      responsablesNombres(o.responsableIds).map((n) => (
+                        <span key={n} className="rounded-full bg-brand/12 px-2 py-0.5 text-[11px] font-medium text-brand">{n}</span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-content-subtle">Sin responsable</span>
+                    )}
+                  </div>
                 </div>
                 <span className="text-content-subtle transition group-hover:translate-x-0.5 group-hover:text-brand">
                   <Icon name="chevronRight" size={18} />
@@ -206,6 +220,32 @@ export default function OrdenesPage() {
             </Field>
           </div>
 
+          {/* Responsable(s) del trabajo */}
+          <div>
+            <p className="label">Responsable(s) del trabajo</p>
+            <p className="mb-2 text-xs text-content-subtle">Quién se hace cargo de toda la orden (podés elegir uno o dos).</p>
+            <div className="flex flex-wrap gap-1.5">
+              {empleados.map((emp) => {
+                const sel = nvResponsables.includes(emp.id);
+                return (
+                  <button
+                    key={emp.id}
+                    type="button"
+                    onClick={() => setNvResponsables((prev) => (sel ? prev.filter((x) => x !== emp.id) : [...prev, emp.id]))}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-medium transition",
+                      sel ? "border-brand bg-brand/15 text-brand" : "border-line text-content-muted hover:border-brand/40"
+                    )}
+                  >
+                    {sel && <Icon name="check" size={11} className="mr-1 inline" />}
+                    {emp.nombre}
+                  </button>
+                );
+              })}
+              {empleados.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
+            </div>
+          </div>
+
           {/* Opción B: desde presupuesto aprobado */}
           {presupuestosSinOrden.length > 0 && (
             <div>
@@ -257,10 +297,14 @@ function OrdenDetalle({
   onDelete: () => void;
 }) {
   const [etapas, setEtapas] = useState<Etapa[]>(orden.etapas);
+  const [responsables, setResponsables] = useState<string[]>(orden.responsableIds ?? []);
   const [confirmDel, setConfirmDel] = useState(false);
 
   const update = (idx: number, patch: Partial<Etapa>) =>
     setEtapas((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
+
+  const toggleResponsableOrden = (empId: string) =>
+    setResponsables((prev) => (prev.includes(empId) ? prev.filter((x) => x !== empId) : [...prev, empId]));
 
   const toggleResponsable = (idx: number, empId: string) =>
     setEtapas((prev) =>
@@ -272,7 +316,7 @@ function OrdenDetalle({
     );
 
   const save = () => {
-    onSave({ ...orden, etapas });
+    onSave({ ...orden, responsableIds: responsables, etapas });
     onClose();
   };
 
@@ -298,6 +342,33 @@ function OrdenDetalle({
       }
     >
       <div className="space-y-3">
+        {/* Responsable(s) de la orden */}
+        <div className="rounded-xl border border-line bg-surface-base p-4">
+          <p className="label">Responsable(s) de la orden</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {empleadosOptions.map((o) => {
+              const sel = responsables.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  disabled={!editable}
+                  onClick={() => toggleResponsableOrden(o.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition",
+                    sel ? "border-brand bg-brand/15 text-brand" : "border-line text-content-muted hover:border-brand/40",
+                    !editable && "cursor-not-allowed opacity-70"
+                  )}
+                >
+                  {sel && <Icon name="check" size={11} className="mr-1 inline" />}
+                  {o.nombre}
+                </button>
+              );
+            })}
+            {empleadosOptions.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
+          </div>
+        </div>
+
         {etapas.map((etapa, idx) => (
           <div key={etapa.key} className="rounded-xl border border-line bg-surface-base p-4">
             <div className="mb-3 flex items-center justify-between">

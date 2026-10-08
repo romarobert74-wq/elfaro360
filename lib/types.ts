@@ -181,6 +181,7 @@ export interface OrdenTrabajo {
   presupuestoId: string;
   clienteId: string;
   destinoId: string;
+  responsableIds: string[]; // empleado(s) a cargo de toda la orden
   etapas: Etapa[];
   fechaCreacion: string;
 }

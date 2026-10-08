@@ -156,7 +156,7 @@ export const permissionMatrix: PermissionMatrix = {
     costos: { view: false, edit: false },
     ordenes: { view: true, edit: false },
     agenda: { view: true, edit: false },
-    empleados: { view: false, edit: false },
+    empleados: { view: true, edit: false },
     pagos: { view: true, edit: false },
     cobros: { view: false, edit: false },
     reportes: { view: false, edit: false },
@@ -438,6 +438,7 @@ export const ordenes: OrdenTrabajo[] = [
     presupuestoId: "pre-1",
     clienteId: "cli-2",
     destinoId: "des-2",
+    responsableIds: ["emp-1"],
     fechaCreacion: "2026-07-12",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
@@ -453,6 +454,7 @@ export const ordenes: OrdenTrabajo[] = [
     presupuestoId: "pre-2",
     clienteId: "cli-1",
     destinoId: "des-1",
+    responsableIds: ["emp-1"],
     fechaCreacion: "2026-07-24",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
