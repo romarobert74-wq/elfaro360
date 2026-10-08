@@ -5,7 +5,7 @@ import { Guard } from "@/components/layout/Guard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Field, Select, TextArea, TextInput } from "@/components/ui/Field";
+import { Field, Select, TextInput } from "@/components/ui/Field";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { MonthYearFilter, matchPeriod, type PeriodValue } from "@/components/ui/MonthYearFilter";
@@ -14,14 +14,12 @@ import { cn } from "@/lib/cn";
 import { useStore } from "@/components/providers/StoreProvider";
 import { buildOrdenBlank, buildOrdenFromPresupuesto } from "@/lib/orders";
 import {
-  estadoEtapaLabels,
-  estadoEtapaTone,
   etapaLabels,
   etapaOrder,
   etapaTone,
   toneHex,
 } from "@/lib/labels";
-import type { Etapa, EstadoEtapa, OrdenTrabajo } from "@/lib/types";
+import type { EstadoEtapa, OrdenTrabajo } from "@/lib/types";
 
 export default function OrdenesPage() {
   const store = useStore();
@@ -228,6 +226,12 @@ export default function OrdenesPage() {
                         <button onClick={() => setOpen(o)} className="w-full text-left">
                           <p className="font-display text-sm font-bold leading-tight">{destinoName(o.destinoId)}</p>
                           <p className="text-xs text-content-muted">{clienteName(o.clienteId)}</p>
+                          {(o.fechaRelevamiento || o.horaRelevamiento) && (
+                            <p className="mt-0.5 flex items-center gap-1 text-[10px] text-content-muted">
+                              <Icon name="clock" size={11} />
+                              {o.fechaRelevamiento ? `${o.fechaRelevamiento.slice(8, 10)}/${o.fechaRelevamiento.slice(5, 7)}` : ""} {o.horaRelevamiento}
+                            </p>
+                          )}
                           <p className="mt-0.5 text-[10px] text-content-subtle">{o.numero} · {progreso(o)}%</p>
                           {nombres.length > 0 && (
                             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -407,7 +411,6 @@ function OrdenDetalle({
   onSave: (o: OrdenTrabajo) => void;
   onDelete: () => void;
 }) {
-  const [etapas, setEtapas] = useState<Etapa[]>(orden.etapas);
   const [responsables, setResponsables] = useState<string[]>(orden.responsableIds ?? []);
   const [visita, setVisita] = useState({
     contacto: orden.contacto ?? "",
@@ -418,20 +421,8 @@ function OrdenDetalle({
   });
   const [confirmDel, setConfirmDel] = useState(false);
 
-  const update = (idx: number, patch: Partial<Etapa>) =>
-    setEtapas((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
-
   const toggleResponsableOrden = (empId: string) =>
     setResponsables((prev) => (prev.includes(empId) ? prev.filter((x) => x !== empId) : [...prev, empId]));
-
-  const toggleResponsable = (idx: number, empId: string) =>
-    setEtapas((prev) =>
-      prev.map((e, i) =>
-        i === idx
-          ? { ...e, empleadoIds: e.empleadoIds.includes(empId) ? e.empleadoIds.filter((x) => x !== empId) : [...e.empleadoIds, empId] }
-          : e
-      )
-    );
 
   const save = () => {
     onSave({
@@ -442,7 +433,6 @@ function OrdenDetalle({
       direccion: visita.direccion,
       fechaRelevamiento: visita.fechaRelevamiento || null,
       horaRelevamiento: visita.horaRelevamiento,
-      etapas,
     });
     onClose();
   };
@@ -517,65 +507,6 @@ function OrdenDetalle({
             </Field>
           </div>
         </div>
-
-        {etapas.map((etapa, idx) => (
-          <div key={etapa.key} className="rounded-xl border border-line bg-surface-base p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full" style={{ background: toneHex[etapaTone[etapa.key]] }} />
-                <span className="font-display font-semibold">{etapaLabels[etapa.key]}</span>
-              </div>
-              <Badge tone={estadoEtapaTone[etapa.estado]} dot>{estadoEtapaLabels[etapa.estado]}</Badge>
-            </div>
-
-            {/* Responsables (uno o varios) */}
-            <div className="mb-3">
-              <p className="label">Responsables</p>
-              <div className="flex flex-wrap gap-1.5">
-                {empleadosOptions.map((o) => {
-                  const sel = etapa.empleadoIds.includes(o.id);
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      disabled={!editable}
-                      onClick={() => toggleResponsable(idx, o.id)}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-medium transition",
-                        sel ? "border-brand bg-brand/15 text-brand" : "border-line text-content-muted hover:border-brand/40",
-                        !editable && "cursor-not-allowed opacity-70"
-                      )}
-                    >
-                      {sel && <Icon name="check" size={11} className="mr-1 inline" />}
-                      {o.nombre}
-                    </button>
-                  );
-                })}
-                {empleadosOptions.length === 0 && <span className="text-xs text-content-subtle">No hay empleados cargados.</span>}
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Estado">
-                <Select value={etapa.estado} disabled={!editable} onChange={(e) => update(idx, { estado: e.target.value as EstadoEtapa })}>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="en_curso">En curso</option>
-                  <option value="completado">Completado</option>
-                </Select>
-              </Field>
-              <div />
-              <Field label="Fecha estimada">
-                <TextInput type="date" disabled={!editable} value={etapa.fechaEstimada ?? ""} onChange={(e) => update(idx, { fechaEstimada: e.target.value || null })} />
-              </Field>
-              <Field label="Fecha real">
-                <TextInput type="date" disabled={!editable} value={etapa.fechaReal ?? ""} onChange={(e) => update(idx, { fechaReal: e.target.value || null })} />
-              </Field>
-              <Field label="Notas" className="sm:col-span-2">
-                <TextArea disabled={!editable} value={etapa.notas} onChange={(e) => update(idx, { notas: e.target.value })} className="min-h-[56px]" />
-              </Field>
-            </div>
-          </div>
-        ))}
       </div>
 
       <ConfirmDialog

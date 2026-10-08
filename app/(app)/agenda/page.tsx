@@ -32,7 +32,7 @@ const empTones: Tone[] = ["brand", "violet", "orange", "green", "robin", "red"];
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-const emptyNota = (fecha: string): AgendaNota => ({ id: "", fecha, titulo: "", nota: "", empleadoId: null });
+const emptyNota = (fecha: string): AgendaNota => ({ id: "", fecha, titulo: "", nota: "", empleadoId: null, items: [] });
 
 export default function AgendaPage() {
   const router = useRouter();
@@ -43,6 +43,7 @@ export default function AgendaPage() {
   const [selDay, setSelDay] = useState<string | null>(null);
   const [selEvent, setSelEvent] = useState<Evento | null>(null);
   const [notaForm, setNotaForm] = useState<AgendaNota | null>(null);
+  const [notaView, setNotaView] = useState<AgendaNota | null>(null);
   const [confirmNota, setConfirmNota] = useState<string | null>(null);
 
   const clienteName = (id: string) => clientes.find((c) => c.id === id)?.nombre ?? "—";
@@ -112,14 +113,18 @@ export default function AgendaPage() {
   const ordenSel = selEvent?.ordenId ? ordenes.find((o) => o.id === selEvent.ordenId) : undefined;
 
   const abrirNuevaNota = (fecha: string) => editable && setNotaForm(emptyNota(fecha));
-  const abrirNota = (id: string) => {
-    const n = notasAgenda.find((x) => x.id === id);
-    if (n) setNotaForm({ ...n });
+  const verNota = (id: string) => { const n = notasAgenda.find((x) => x.id === id); if (n) setNotaView({ ...n }); };
+  const toggleItem = (nota: AgendaNota, itemId: string) => {
+    const items = (nota.items ?? []).map((it) => (it.id === itemId ? { ...it, hecho: !it.hecho } : it));
+    const next = { ...nota, items };
+    updateNota(next);
+    setNotaView(next);
   };
   const guardarNota = () => {
     if (!notaForm || !notaForm.titulo.trim()) return;
-    if (notaForm.id) updateNota(notaForm);
-    else addNota({ ...notaForm, id: uid("nota") });
+    const limpio: AgendaNota = { ...notaForm, items: (notaForm.items ?? []).filter((it) => it.texto.trim()) };
+    if (limpio.id) updateNota(limpio);
+    else addNota({ ...limpio, id: uid("nota") });
     setNotaForm(null);
   };
 
@@ -194,19 +199,28 @@ export default function AgendaPage() {
         >
           <div className="space-y-2">
             {selEvents.length === 0 && <p className="text-sm text-content-muted">No hay nada este día. {editable && "Agregá una nota con el botón de abajo."}</p>}
-            {selEvents.map((ev, i) => (
-              <button
-                key={i}
-                onClick={() => (ev.tipo === "nota" ? ev.notaId && abrirNota(ev.notaId) : setSelEvent(ev))}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2.5 text-left transition hover:border-brand/40"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{ev.tipo === "nota" ? "📝 " : ""}{ev.label}</p>
-                  <p className="text-xs text-content-subtle">{ev.tipo === "orden" ? "Orden de trabajo — tocá para ver los datos" : "Nota / tarea"}</p>
-                </div>
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: ev.color }} />
-              </button>
-            ))}
+            {selEvents.map((ev, i) => {
+              const notaEv = ev.tipo === "nota" ? notasAgenda.find((n) => n.id === ev.notaId) : undefined;
+              const items = notaEv?.items ?? [];
+              const sub = ev.tipo === "orden"
+                ? "Orden de trabajo — tocá para ver los datos"
+                : items.length
+                  ? `Checklist · ${items.filter((it) => it.hecho).length}/${items.length} hechas`
+                  : "Nota / tarea";
+              return (
+                <button
+                  key={i}
+                  onClick={() => (ev.tipo === "nota" ? ev.notaId && verNota(ev.notaId) : setSelEvent(ev))}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface-base px-3 py-2.5 text-left transition hover:border-brand/40"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{ev.tipo === "nota" ? "📝 " : ""}{ev.label}</p>
+                    <p className="text-xs text-content-subtle">{sub}</p>
+                  </div>
+                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: ev.color }} />
+                </button>
+              );
+            })}
           </div>
         </Modal>
       )}
@@ -276,6 +290,45 @@ export default function AgendaPage() {
               </Select>
             </Field>
             <Field label="Detalle" className="sm:col-span-2"><TextArea value={notaForm.nota} onChange={(e) => setNotaForm({ ...notaForm, nota: e.target.value })} /></Field>
+            <div className="sm:col-span-2">
+              <p className="label mb-2">Checklist de tareas (opcional)</p>
+              <div className="space-y-2">
+                {(notaForm.items ?? []).map((it, i) => (
+                  <div key={it.id} className="flex items-center gap-2">
+                    <TextInput value={it.texto} onChange={(e) => setNotaForm({ ...notaForm, items: (notaForm.items ?? []).map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)) })} placeholder={`Tarea ${i + 1}`} />
+                    <button type="button" onClick={() => setNotaForm({ ...notaForm, items: (notaForm.items ?? []).filter((_, j) => j !== i) })} className="rounded-md p-2 text-content-muted transition hover:text-spectrum-red" title="Quitar"><Icon name="trash" size={14} /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setNotaForm({ ...notaForm, items: [...(notaForm.items ?? []), { id: uid("it"), texto: "", hecho: false }] })} className="btn-ghost text-xs"><Icon name="plus" size={14} /> Agregar tarea</button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vista de nota: checklist tildable (los empleados marcan lo que van haciendo) */}
+      {notaView && (
+        <Modal
+          open
+          onClose={() => setNotaView(null)}
+          title={notaView.titulo || "Nota / tarea"}
+          subtitle={`${notaView.fecha.slice(8, 10)}/${notaView.fecha.slice(5, 7)}${notaView.empleadoId ? " · " + empName(notaView.empleadoId) : ""}`}
+          footer={<><button className="btn-ghost" onClick={() => setNotaView(null)}>Cerrar</button>{editable && <button className="btn-primary" onClick={() => { setNotaForm({ ...notaView }); setNotaView(null); }}><Icon name="edit" size={16} /> Editar</button>}</>}
+        >
+          <div className="space-y-4">
+            {notaView.nota && <p className="whitespace-pre-line text-sm text-content-muted">{notaView.nota}</p>}
+            {(notaView.items ?? []).length > 0 ? (
+              <div className="space-y-2">
+                {(notaView.items ?? []).map((it) => (
+                  <button key={it.id} type="button" onClick={() => toggleItem(notaView, it.id)} className="flex w-full items-center gap-3 rounded-lg border border-line bg-surface-base px-3 py-2.5 text-left transition hover:border-brand/40">
+                    <span className={cn("grid h-5 w-5 flex-none place-items-center rounded-md border", it.hecho ? "border-brand bg-brand text-white" : "border-line")}>{it.hecho && <Icon name="check" size={13} />}</span>
+                    <span className={cn("text-sm", it.hecho && "text-content-subtle line-through")}>{it.texto}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              !notaView.nota && <p className="text-sm text-content-muted">Sin detalle ni tareas.</p>
+            )}
           </div>
         </Modal>
       )}

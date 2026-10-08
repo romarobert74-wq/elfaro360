@@ -244,12 +244,19 @@ export interface PagoEmpleado {
 }
 
 // ===== Agenda: notas / tareas manuales =====
+export interface AgendaTareaItem {
+  id: string;
+  texto: string;
+  hecho: boolean;
+}
+
 export interface AgendaNota {
   id: string;
   fecha: string; // YYYY-MM-DD
   titulo: string;
   nota: string;
   empleadoId: string | null;
+  items?: AgendaTareaItem[]; // checklist de tareas (opcional) que el empleado va tildando
 }
 
 // ===== Configuración (settings editables) =====
