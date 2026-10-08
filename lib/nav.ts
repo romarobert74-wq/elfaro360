@@ -19,6 +19,7 @@ export const navItems: NavItem[] = [
   { key: "presupuestos", label: "Presupuestos", href: "/presupuestos", icon: "presupuestos", group: "Comercial" },
 
   { key: "ordenes", label: "Órdenes de Trabajo", href: "/ordenes", icon: "ordenes", group: "Producción" },
+  { key: "relevamientos", label: "Relevamientos", href: "/relevamientos", icon: "check", group: "Producción" },
   { key: "agenda", label: "Agenda", href: "/agenda", icon: "agenda", group: "Producción" },
   { key: "empleados", label: "Empleados", href: "/empleados", icon: "empleados", group: "Producción" },
 

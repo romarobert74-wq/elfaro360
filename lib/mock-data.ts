@@ -10,6 +10,7 @@ import type {
   PagoEmpleado,
   PermissionMatrix,
   Presupuesto,
+  Relevamiento,
   Servicio,
   User,
 } from "./types";
@@ -121,6 +122,7 @@ export const permissionMatrix: PermissionMatrix = {
     presupuestos: { view: true, edit: true },
     costos: { view: true, edit: true },
     ordenes: { view: true, edit: true },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: true },
     empleados: { view: true, edit: true },
     pagos: { view: true, edit: true },
@@ -138,6 +140,7 @@ export const permissionMatrix: PermissionMatrix = {
     presupuestos: { view: true, edit: true },
     costos: { view: true, edit: true },
     ordenes: { view: true, edit: true },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: true },
     empleados: { view: true, edit: true },
     pagos: { view: true, edit: true },
@@ -155,6 +158,7 @@ export const permissionMatrix: PermissionMatrix = {
     presupuestos: { view: false, edit: false },
     costos: { view: false, edit: false },
     ordenes: { view: true, edit: false },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: false },
     empleados: { view: true, edit: false },
     pagos: { view: true, edit: false },
@@ -465,6 +469,9 @@ export const ordenes: OrdenTrabajo[] = [
     ],
   },
 ];
+
+// ---------- Relevamientos (formularios de 3 pasos) ----------
+export const relevamientos: Relevamiento[] = [];
 
 // ---------- Pagos a empleados ----------
 export const pagosEmpleados: PagoEmpleado[] = [

@@ -10,6 +10,7 @@ export type ModuleKey =
   | "presupuestos"
   | "costos"
   | "ordenes"
+  | "relevamientos"
   | "agenda"
   | "empleados"
   | "pagos"
@@ -184,6 +185,30 @@ export interface OrdenTrabajo {
   responsableIds: string[]; // empleado(s) a cargo de toda la orden
   etapas: Etapa[];
   fechaCreacion: string;
+}
+
+// ===== Relevamiento (formulario de 3 pasos, ligado a un destino) =====
+export type EstadoRelevamiento = "borrador" | "completado";
+
+export interface Relevamiento {
+  id: string;
+  destinoId: string;
+  presupuestoId: string; // "" si no aplica
+  empleadoId: string | null; // quién lo realiza
+  // Paso 1: checklist de equipamiento (ítems tildados)
+  equipo: string[];
+  // Paso 2: datos del destino (editables, se pre-cargan del destino)
+  horario: string;
+  contactoNombre: string;
+  contactoCel: string;
+  servicio: string;
+  servicioAdicional: string;
+  // Paso 3: cierre "¿qué se hizo?" (ítems tildados) + nota libre
+  cierre: string[];
+  nota: string;
+  estado: EstadoRelevamiento;
+  fechaCreacion: string;
+  fechaCierre: string | null;
 }
 
 // ===== Empleados =====

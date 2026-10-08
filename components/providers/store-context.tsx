@@ -14,6 +14,7 @@ import type {
   PagoEmpleado,
   PermissionMatrix,
   Presupuesto,
+  Relevamiento,
   Role,
   Servicio,
   User,
@@ -56,6 +57,7 @@ export interface StoreValue {
   costos: Costo[];
   presupuestos: Presupuesto[];
   ordenes: OrdenTrabajo[];
+  relevamientos: Relevamiento[];
   empleados: Empleado[];
   pagosEmpleados: PagoEmpleado[];
   cobros: Cobro[];
@@ -69,6 +71,7 @@ export interface StoreValue {
   addCosto: (x: Costo) => void; updateCosto: (x: Costo) => void; removeCosto: (id: string) => void;
   addPresupuesto: (x: Presupuesto) => void; updatePresupuesto: (x: Presupuesto) => void; removePresupuesto: (id: string) => void;
   addOrden: (x: OrdenTrabajo) => void; updateOrden: (x: OrdenTrabajo) => void; removeOrden: (id: string) => void;
+  addRelevamiento: (x: Relevamiento) => void; updateRelevamiento: (x: Relevamiento) => void; removeRelevamiento: (id: string) => void;
   addEmpleado: (x: Empleado) => void; updateEmpleado: (x: Empleado) => void; removeEmpleado: (id: string) => void;
   addPago: (x: PagoEmpleado) => void; updatePago: (x: PagoEmpleado) => void; removePago: (id: string) => void;
   addCobro: (x: Cobro) => void; updateCobro: (x: Cobro) => void; removeCobro: (id: string) => void;
