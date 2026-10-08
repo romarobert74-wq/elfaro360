@@ -128,7 +128,7 @@ export default function CobrosPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Presupuesto" className="sm:col-span-2">
             <Select value={form.presupuestoId} onChange={(e) => onPresupuesto(e.target.value)}>
-              {presupuestos.map((p) => (<option key={p.id} value={p.id}>{p.numero} · {clienteName(p.clienteId)}</option>))}
+              {presupuestos.map((p) => (<option key={p.id} value={p.id}>{p.numero} · {clienteName(p.clienteId)} · {destinoDeCobro(p.id)}</option>))}
             </Select>
           </Field>
           <Field label="Cliente">
