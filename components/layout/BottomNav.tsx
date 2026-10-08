@@ -17,11 +17,13 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
-  const { can } = useStore();
+  const { can, currentUser } = useStore();
+  // El empleado nunca ve el Dashboard (ni aunque la matriz guardada lo permita)
+  const oculto = (k: string) => currentUser?.role === "empleado" && k === "dashboard";
 
   const quick = preferred
     .map((k) => navItems.find((n) => n.key === k))
-    .filter((n): n is NonNullable<typeof n> => !!n && can(n.key, "view"))
+    .filter((n): n is NonNullable<typeof n> => !!n && can(n.key, "view") && !oculto(n.key))
     .slice(0, 4);
 
   return (

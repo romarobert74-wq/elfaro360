@@ -15,9 +15,12 @@ function isActive(pathname: string, href: string) {
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { can } = useStore();
+  const { can, currentUser } = useStore();
 
-  const visible = navItems.filter((n) => can(n.key, "view"));
+  // El empleado nunca ve el Dashboard (ni aunque la matriz guardada lo permita)
+  const visible = navItems.filter(
+    (n) => can(n.key, "view") && !(currentUser?.role === "empleado" && n.key === "dashboard")
+  );
 
   return (
     <nav className="flex flex-col gap-5 px-3 py-2">

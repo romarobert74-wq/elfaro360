@@ -151,7 +151,7 @@ export const permissionMatrix: PermissionMatrix = {
     permisos: { view: true, edit: false },
   },
   empleado: {
-    dashboard: { view: true, edit: false },
+    dashboard: { view: false, edit: false },
     clientes: { view: false, edit: false },
     destinos: { view: false, edit: false },
     servicios: { view: false, edit: false },
