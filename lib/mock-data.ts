@@ -10,6 +10,7 @@ import type {
   PagoEmpleado,
   PermissionMatrix,
   Presupuesto,
+  Relevamiento,
   Servicio,
   User,
 } from "./types";
@@ -121,6 +122,7 @@ export const permissionMatrix: PermissionMatrix = {
     presupuestos: { view: true, edit: true },
     costos: { view: true, edit: true },
     ordenes: { view: true, edit: true },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: true },
     empleados: { view: true, edit: true },
     pagos: { view: true, edit: true },
@@ -138,6 +140,7 @@ export const permissionMatrix: PermissionMatrix = {
     presupuestos: { view: true, edit: true },
     costos: { view: true, edit: true },
     ordenes: { view: true, edit: true },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: true },
     empleados: { view: true, edit: true },
     pagos: { view: true, edit: true },
@@ -148,15 +151,16 @@ export const permissionMatrix: PermissionMatrix = {
     permisos: { view: true, edit: false },
   },
   empleado: {
-    dashboard: { view: true, edit: false },
+    dashboard: { view: false, edit: false },
     clientes: { view: false, edit: false },
     destinos: { view: false, edit: false },
     servicios: { view: false, edit: false },
     presupuestos: { view: false, edit: false },
     costos: { view: false, edit: false },
     ordenes: { view: true, edit: false },
+    relevamientos: { view: true, edit: true },
     agenda: { view: true, edit: false },
-    empleados: { view: false, edit: false },
+    empleados: { view: true, edit: false },
     pagos: { view: true, edit: false },
     cobros: { view: false, edit: false },
     reportes: { view: false, edit: false },
@@ -438,12 +442,17 @@ export const ordenes: OrdenTrabajo[] = [
     presupuestoId: "pre-1",
     clienteId: "cli-2",
     destinoId: "des-2",
+    responsableIds: ["emp-1"],
+    contacto: "",
+    servicio: "Tour 360",
+    direccion: "",
+    fechaRelevamiento: "2026-08-06",
+    horaRelevamiento: "09:00",
     fechaCreacion: "2026-07-12",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-05", fechaReal: "2026-08-05", estado: "completado", notas: "Coordinado con la bodega." },
       { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-06", fechaReal: "2026-08-06", estado: "completado", notas: "Se sumó dron al atardecer." },
-      { key: "edicion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
-      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "armado_tour", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-12", fechaReal: null, estado: "en_curso", notas: "" },
       { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-16", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
@@ -453,24 +462,32 @@ export const ordenes: OrdenTrabajo[] = [
     presupuestoId: "pre-2",
     clienteId: "cli-1",
     destinoId: "des-1",
+    responsableIds: ["emp-1"],
+    contacto: "",
+    servicio: "Tour 360",
+    direccion: "",
+    fechaRelevamiento: "2026-08-08",
+    horaRelevamiento: "10:00",
     fechaCreacion: "2026-07-24",
     etapas: [
       { key: "aprobado", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-04", fechaReal: null, estado: "en_curso", notas: "" },
       { key: "relevamiento", empleadoIds: ["emp-1"], fechaEstimada: "2026-08-08", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "edicion", empleadoIds: ["emp-3"], fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
-      { key: "publicacion", empleadoIds: ["emp-2"], fechaEstimada: "2026-08-14", fechaReal: null, estado: "pendiente", notas: "" },
+      { key: "armado_tour", empleadoIds: ["emp-3"], fechaEstimada: "2026-08-11", fechaReal: null, estado: "pendiente", notas: "" },
       { key: "entregable", empleadoIds: [], fechaEstimada: "2026-08-15", fechaReal: null, estado: "pendiente", notas: "" },
     ],
   },
 ];
 
+// ---------- Relevamientos (formularios de 3 pasos) ----------
+export const relevamientos: Relevamiento[] = [];
+
 // ---------- Pagos a empleados ----------
 export const pagosEmpleados: PagoEmpleado[] = [
   { id: "pag-1", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pagado", fecha: "2026-08-05" },
   { id: "pag-2", empleadoId: "emp-1", ordenId: "ord-1", etapas: ["relevamiento"], concepto: "", monto: 22000, estado: "pagado", fecha: "2026-08-07" },
-  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapas: ["edicion"], concepto: "", monto: 26000, estado: "pendiente", fecha: null },
+  { id: "pag-3", empleadoId: "emp-2", ordenId: "ord-1", etapas: ["armado_tour"], concepto: "", monto: 26000, estado: "pendiente", fecha: null },
   { id: "pag-4", empleadoId: "emp-1", ordenId: "ord-2", etapas: ["aprobado"], concepto: "", monto: 8000, estado: "pendiente", fecha: null },
-  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapas: ["edicion"], concepto: "", monto: 20000, estado: "pendiente", fecha: null },
+  { id: "pag-5", empleadoId: "emp-3", ordenId: "ord-2", etapas: ["armado_tour"], concepto: "", monto: 20000, estado: "pendiente", fecha: null },
 ];
 
 // ---------- Cobros ----------

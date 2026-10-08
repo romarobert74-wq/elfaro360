@@ -10,6 +10,7 @@ export type ModuleKey =
   | "presupuestos"
   | "costos"
   | "ordenes"
+  | "relevamientos"
   | "agenda"
   | "empleados"
   | "pagos"
@@ -160,8 +161,7 @@ export interface Presupuesto {
 export type EtapaKey =
   | "aprobado"
   | "relevamiento"
-  | "edicion"
-  | "publicacion"
+  | "armado_tour"
   | "entregable";
 
 export type EstadoEtapa = "pendiente" | "en_curso" | "completado";
@@ -181,8 +181,39 @@ export interface OrdenTrabajo {
   presupuestoId: string;
   clienteId: string;
   destinoId: string;
+  responsableIds: string[]; // empleado(s) a cargo de toda la orden
+  // Datos de la visita / relevamiento (se traen del destino al crear la orden)
+  contacto: string; // con quién hablar en el destino
+  servicio: string; // servicio a realizar
+  direccion: string; // dónde ir
+  fechaRelevamiento: string | null; // día de inicio del relevamiento (aparece en la agenda)
+  horaRelevamiento: string; // hora de inicio
   etapas: Etapa[];
   fechaCreacion: string;
+}
+
+// ===== Relevamiento (formulario de 3 pasos, ligado a un destino) =====
+export type EstadoRelevamiento = "borrador" | "completado";
+
+export interface Relevamiento {
+  id: string;
+  destinoId: string;
+  presupuestoId: string; // "" si no aplica
+  empleadoId: string | null; // quién lo realiza
+  // Paso 1: checklist de equipamiento (ítems tildados)
+  equipo: string[];
+  // Paso 2: datos del destino (editables, se pre-cargan del destino)
+  horario: string;
+  contactoNombre: string;
+  contactoCel: string;
+  servicio: string;
+  servicioAdicional: string;
+  // Paso 3: cierre "¿qué se hizo?" (ítems tildados) + nota libre
+  cierre: string[];
+  nota: string;
+  estado: EstadoRelevamiento;
+  fechaCreacion: string;
+  fechaCierre: string | null;
 }
 
 // ===== Empleados =====
@@ -213,12 +244,19 @@ export interface PagoEmpleado {
 }
 
 // ===== Agenda: notas / tareas manuales =====
+export interface AgendaTareaItem {
+  id: string;
+  texto: string;
+  hecho: boolean;
+}
+
 export interface AgendaNota {
   id: string;
   fecha: string; // YYYY-MM-DD
   titulo: string;
   nota: string;
   empleadoId: string | null;
+  items?: AgendaTareaItem[]; // checklist de tareas (opcional) que el empleado va tildando
 }
 
 // ===== Configuración (settings editables) =====

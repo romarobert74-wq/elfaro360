@@ -57,6 +57,10 @@ export default function PagosPage() {
     fecha: null,
   });
   const [toDelete, setToDelete] = useState<PagoEmpleado | null>(null);
+  const [resumenOpen, setResumenOpen] = useState(false);
+  const [resumenEmp, setResumenEmp] = useState<string>("");
+  const [desde, setDesde] = useState<string>("");
+  const [hasta, setHasta] = useState<string>("");
 
   const visibles = useMemo(() => {
     let rows = pagosEmpleados;
@@ -82,6 +86,85 @@ export default function PagosPage() {
     if (editing) updatePago({ ...form, id: editing.id });
     else addPago({ ...form, id: uid("pag") });
     setModal(false);
+  };
+
+  // ----- Resumen por empleado + compartir por WhatsApp -----
+  // Detalle del pago: título (presupuesto · cliente, o concepto) y subtítulo (destino · etapas · concepto)
+  const detallePago = (p: PagoEmpleado) => {
+    if (p.ordenId) {
+      const titulo = `${presNumDeOrden(p.ordenId)} · ${clienteDePago(p)}`;
+      const sub = [destinoDePago(p), p.etapas.map(etapaPagoLabel).join(", "), p.concepto]
+        .filter((x) => x && x !== "—")
+        .join(" · ");
+      return { titulo, sub };
+    }
+    // Gasto general (sin orden): el concepto es lo principal
+    return { titulo: p.concepto || "Gasto general", sub: p.etapas.length ? p.etapas.map(etapaPagoLabel).join(", ") : "" };
+  };
+  const enRango = (f: string | null) => {
+    if (!desde && !hasta) return true;
+    if (!f) return false; // sin fecha de pago no entra cuando hay filtro
+    if (desde && f < desde) return false;
+    if (hasta && f > hasta) return false;
+    return true;
+  };
+  const resumenData = (empId: string) => {
+    const rows = pagosEmpleados.filter((p) => p.empleadoId === empId);
+    const pagados = rows.filter((p) => p.estado === "pagado" && enRango(p.fecha));
+    const pendientes = rows.filter((p) => p.estado === "pendiente");
+    return { pagados, pendientes, totalPag: pagados.reduce((a, p) => a + p.monto, 0), totalPen: pendientes.reduce((a, p) => a + p.monto, 0) };
+  };
+  const abrirResumen = () => {
+    setResumenEmp(filtroEmp !== "todos" ? filtroEmp : (empleados[0]?.id ?? ""));
+    setDesde("");
+    setHasta("");
+    setResumenOpen(true);
+  };
+  const textoWhatsapp = (empId: string) => {
+    const { pagados, pendientes, totalPag, totalPen } = resumenData(empId);
+    const sep = "━━━━━━━━━━━━━━";
+    const L: string[] = [];
+    L.push("📋 *RESUMEN DE PAGOS*");
+    L.push(`👤 *${empName(empId)}*`);
+    L.push(desde || hasta
+      ? `📅 ${desde ? formatDate(desde) : "inicio"} → ${hasta ? formatDate(hasta) : "hoy"}`
+      : `📅 ${formatDate(new Date().toISOString().slice(0, 10))}`);
+    L.push(sep);
+    L.push("");
+    L.push("✅ *PAGADO*");
+    if (pagados.length) {
+      pagados.forEach((p) => {
+        const d = detallePago(p);
+        L.push(`• *${d.titulo}*`);
+        if (d.sub) L.push(`  _${d.sub}_`);
+        L.push(`  💵 ${formatCurrency(p.monto)}${p.fecha ? " · " + formatDate(p.fecha) : ""}`);
+      });
+    } else L.push("_Sin pagos en el período_");
+    L.push(`*Subtotal pagado: ${formatCurrency(totalPag)}*`);
+    L.push(sep);
+    L.push("");
+    L.push("⏳ *PENDIENTE*");
+    if (pendientes.length) {
+      pendientes.forEach((p) => {
+        const d = detallePago(p);
+        L.push(`• *${d.titulo}*`);
+        if (d.sub) L.push(`  _${d.sub}_`);
+        L.push(`  💵 ${formatCurrency(p.monto)}`);
+      });
+    } else L.push("_Nada pendiente_");
+    L.push(`*Subtotal pendiente: ${formatCurrency(totalPen)}*`);
+    L.push(sep);
+    L.push("");
+    L.push(`✅ *TOTAL PAGADO: ${formatCurrency(totalPag)}*`);
+    L.push(`⏳ *FALTA PAGAR: ${formatCurrency(totalPen)}*`);
+    return L.join("\n");
+  };
+  const compartirWhatsapp = (empId: string) => {
+    const emp = empleados.find((e) => e.id === empId);
+    const num = (emp?.telefono || "").replace(/[^\d]/g, "");
+    const texto = encodeURIComponent(textoWhatsapp(empId));
+    const url = num ? `https://wa.me/${num}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    try { window.open(url, "_blank", "noopener"); } catch {}
   };
 
   const columns: Column<PagoEmpleado>[] = [
@@ -125,7 +208,12 @@ export default function PagosPage() {
       <PageHeader
         title={isEmpleado ? "Mis Pagos" : "Pagos a Empleados"}
         subtitle={isEmpleado ? "Lo que se te debe y lo pagado" : "Registro de pagos por etapa de trabajo"}
-        actions={editable && <button className="btn-primary" onClick={openNew}><Icon name="plus" size={16} /> Registrar pago</button>}
+        actions={!isEmpleado && (
+          <div className="flex items-center gap-2">
+            <button className="btn-ghost" onClick={abrirResumen} disabled={empleados.length === 0}><Icon name="whatsapp" size={16} /> Resumen</button>
+            {editable && <button className="btn-primary" onClick={openNew}><Icon name="plus" size={16} /> Registrar pago</button>}
+          </div>
+        )}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4">
@@ -212,6 +300,73 @@ export default function PagosPage() {
           </Field>
         </div>
       </Modal>
+
+      {/* Resumen por empleado + compartir por WhatsApp */}
+      {resumenOpen && (
+        <Modal
+          open
+          onClose={() => setResumenOpen(false)}
+          title="Resumen por empleado"
+          subtitle="Lo pagado y lo que falta — listo para compartir por WhatsApp"
+          footer={
+            <>
+              <button className="btn-ghost" onClick={() => setResumenOpen(false)}>Cerrar</button>
+              <button className="btn-primary" onClick={() => compartirWhatsapp(resumenEmp)} disabled={!resumenEmp}><Icon name="whatsapp" size={16} /> Compartir por WhatsApp</button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <Field label="Empleado">
+              <Select value={resumenEmp} onChange={(e) => setResumenEmp(e.target.value)}>
+                {empleados.map((e) => (<option key={e.id} value={e.id}>{e.nombre}</option>))}
+              </Select>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Desde">
+                <TextInput type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+              </Field>
+              <Field label="Hasta">
+                <TextInput type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+              </Field>
+            </div>
+            {(desde || hasta) && (
+              <button className="text-xs text-brand" onClick={() => { setDesde(""); setHasta(""); }}>Limpiar fechas</button>
+            )}
+            {resumenEmp && (() => {
+              const { pagados, pendientes, totalPag, totalPen } = resumenData(resumenEmp);
+              const fila = (p: PagoEmpleado) => {
+                const d = detallePago(p);
+                return (
+                  <div key={p.id} className="flex items-start justify-between gap-2 rounded-lg border border-line bg-surface-base px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{d.titulo}</p>
+                      {d.sub && <p className="truncate text-xs text-content-subtle">{d.sub}</p>}
+                      {p.fecha && <p className="text-[11px] text-content-subtle">{formatDate(p.fecha)}</p>}
+                    </div>
+                    <span className="shrink-0 tabular-nums text-content-muted">{formatCurrency(p.monto)}</span>
+                  </div>
+                );
+              };
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Pagado{(desde || hasta) ? " (período)" : ""}</p><p className="font-display text-lg font-bold text-spectrum-green">{formatCurrency(totalPag)}</p></div>
+                    <div className="rounded-xl border border-line bg-surface-base p-3"><p className="text-xs text-content-subtle">Falta pagar</p><p className="font-display text-lg font-bold text-spectrum-orange">{formatCurrency(totalPen)}</p></div>
+                  </div>
+                  <div>
+                    <p className="label mb-1">Pagado</p>
+                    {pagados.length ? <div className="space-y-1">{pagados.map(fila)}</div> : <p className="text-sm text-content-muted">Nada pagado {(desde || hasta) ? "en el período" : "aún"}.</p>}
+                  </div>
+                  <div>
+                    <p className="label mb-1">Pendiente</p>
+                    {pendientes.length ? <div className="space-y-1">{pendientes.map(fila)}</div> : <p className="text-sm text-content-muted">Sin pendientes.</p>}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </Modal>
+      )}
 
       <ConfirmDialog
         open={!!toDelete}

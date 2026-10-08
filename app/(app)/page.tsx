@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Guard } from "@/components/layout/Guard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
@@ -14,6 +15,7 @@ import { etapaLabels, etapaTone } from "@/lib/labels";
 import type { EtapaKey } from "@/lib/types";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const store = useStore();
   const { currentUser, presupuestos, ordenes, clientes, cobros, costos, pagosEmpleados, empleados, settings } = store;
   const isEmpleado = currentUser?.role === "empleado";
@@ -68,20 +70,11 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenes, isEmpleado, myEmpId]);
 
-  // ---- Vista empleado (reducida) ----
-  if (isEmpleado) {
-    const misPendientes = pagosEmpleados.filter((p) => p.empleadoId === myEmpId && p.estado === "pendiente").reduce((a, p) => a + p.monto, 0);
-    return (
-      <Guard module="dashboard">
-        <PageHeader title={`Hola, ${currentUser?.nombre.split(" ")[0]} 👋`} subtitle="Tu resumen" />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Mis pagos pendientes" value={formatCurrency(misPendientes)} icon="pagos" tone="orange" />
-          <StatCard label="Mis próximas etapas" value={String(proximas.length)} icon="agenda" tone="violet" />
-        </div>
-        <ProximasCard proximas={proximas} />
-      </Guard>
-    );
-  }
+  // ---- El empleado NO ve el dashboard (ni métricas ni precios): va a la Agenda ----
+  useEffect(() => {
+    if (isEmpleado) router.replace("/agenda");
+  }, [isEmpleado, router]);
+  if (isEmpleado) return null;
 
   // ---- Vista negocio ----
   return (

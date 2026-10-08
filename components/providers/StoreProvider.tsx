@@ -15,6 +15,7 @@ import type {
   PagoEmpleado,
   PermissionMatrix,
   Presupuesto,
+  Relevamiento,
   Role,
   Servicio,
   User,
@@ -47,6 +48,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const costos = useCollection<Costo>(mock.costos);
   const presupuestos = useCollection<Presupuesto>(mock.presupuestos);
   const ordenes = useCollection<OrdenTrabajo>(mock.ordenes);
+  const relevamientos = useCollection<Relevamiento>(mock.relevamientos);
   const empleados = useCollection<Empleado>(mock.empleados);
   const pagos = useCollection<PagoEmpleado>(mock.pagosEmpleados);
   const cobros = useCollection<Cobro>(mock.cobros);
@@ -130,6 +132,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       costos: costos.items,
       presupuestos: presupuestos.items,
       ordenes: ordenes.items,
+      relevamientos: relevamientos.items,
       empleados: empleados.items,
       pagosEmpleados: pagos.items,
       cobros: cobros.items,
@@ -141,13 +144,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addCosto: costos.add, updateCosto: costos.update, removeCosto: costos.remove,
       addPresupuesto: presupuestos.add, updatePresupuesto: presupuestos.update, removePresupuesto: presupuestos.remove,
       addOrden: ordenes.add, updateOrden: ordenes.update, removeOrden: ordenes.remove,
+      addRelevamiento: relevamientos.add, updateRelevamiento: relevamientos.update, removeRelevamiento: relevamientos.remove,
       addEmpleado: empleados.add, updateEmpleado: empleados.update, removeEmpleado: empleados.remove,
       addPago: pagos.add, updatePago: pagos.update, removePago: pagos.remove,
       addCobro: cobros.add, updateCobro: cobros.update, removeCobro: cobros.remove,
       addNota: notas.add, updateNota: notas.update, removeNota: notas.remove,
     }),
     [currentUser, login, logout, setRole, permissions, setPermission, can, settings,
-      users, clientes, destinos, servicios, costos, presupuestos, ordenes, empleados, pagos, cobros, notas]
+      users, clientes, destinos, servicios, costos, presupuestos, ordenes, relevamientos, empleados, pagos, cobros, notas]
   );
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
