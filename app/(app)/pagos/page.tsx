@@ -101,10 +101,6 @@ export default function PagosPage() {
     // Gasto general (sin orden): el concepto es lo principal
     return { titulo: p.concepto || "Gasto general", sub: p.etapas.length ? p.etapas.map(etapaPagoLabel).join(", ") : "" };
   };
-  const descPago = (p: PagoEmpleado) => {
-    const { titulo, sub } = detallePago(p);
-    return sub ? `${titulo} (${sub})` : titulo;
-  };
   const enRango = (f: string | null) => {
     if (!desde && !hasta) return true;
     if (!f) return false; // sin fecha de pago no entra cuando hay filtro
@@ -126,21 +122,41 @@ export default function PagosPage() {
   };
   const textoWhatsapp = (empId: string) => {
     const { pagados, pendientes, totalPag, totalPen } = resumenData(empId);
+    const sep = "━━━━━━━━━━━━━━";
     const L: string[] = [];
-    L.push(`*Resumen de pagos — ${empName(empId)}*`);
-    if (desde || hasta) L.push(`Período: ${desde ? formatDate(desde) : "inicio"} a ${hasta ? formatDate(hasta) : "hoy"}`);
-    else L.push(formatDate(new Date().toISOString().slice(0, 10)));
+    L.push("📋 *RESUMEN DE PAGOS*");
+    L.push(`👤 *${empName(empId)}*`);
+    L.push(desde || hasta
+      ? `📅 ${desde ? formatDate(desde) : "inicio"} → ${hasta ? formatDate(hasta) : "hoy"}`
+      : `📅 ${formatDate(new Date().toISOString().slice(0, 10))}`);
+    L.push(sep);
     L.push("");
     L.push("✅ *PAGADO*");
-    pagados.length ? pagados.forEach((p) => L.push(`• ${descPago(p)} — ${formatCurrency(p.monto)}${p.fecha ? " (" + formatDate(p.fecha) + ")" : ""}`)) : L.push("• (nada)");
-    L.push(`Subtotal: ${formatCurrency(totalPag)}`);
+    if (pagados.length) {
+      pagados.forEach((p) => {
+        const d = detallePago(p);
+        L.push(`• *${d.titulo}*`);
+        if (d.sub) L.push(`  _${d.sub}_`);
+        L.push(`  💵 ${formatCurrency(p.monto)}${p.fecha ? " · " + formatDate(p.fecha) : ""}`);
+      });
+    } else L.push("_Sin pagos en el período_");
+    L.push(`*Subtotal pagado: ${formatCurrency(totalPag)}*`);
+    L.push(sep);
     L.push("");
     L.push("⏳ *PENDIENTE*");
-    pendientes.length ? pendientes.forEach((p) => L.push(`• ${descPago(p)} — ${formatCurrency(p.monto)}`)) : L.push("• (nada)");
-    L.push(`Subtotal: ${formatCurrency(totalPen)}`);
+    if (pendientes.length) {
+      pendientes.forEach((p) => {
+        const d = detallePago(p);
+        L.push(`• *${d.titulo}*`);
+        if (d.sub) L.push(`  _${d.sub}_`);
+        L.push(`  💵 ${formatCurrency(p.monto)}`);
+      });
+    } else L.push("_Nada pendiente_");
+    L.push(`*Subtotal pendiente: ${formatCurrency(totalPen)}*`);
+    L.push(sep);
     L.push("");
-    L.push(`*Total pagado:* ${formatCurrency(totalPag)}`);
-    L.push(`*Falta pagar:* ${formatCurrency(totalPen)}`);
+    L.push(`✅ *TOTAL PAGADO: ${formatCurrency(totalPag)}*`);
+    L.push(`⏳ *FALTA PAGAR: ${formatCurrency(totalPen)}*`);
     return L.join("\n");
   };
   const compartirWhatsapp = (empId: string) => {
