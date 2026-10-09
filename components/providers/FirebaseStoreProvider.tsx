@@ -178,11 +178,15 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser(null);
       return;
     }
-    const email = (authUser.email ?? "").toLowerCase();
-    const found = users.items.find((u) => u.email.toLowerCase() === email && u.activo);
-    if (found) {
+    const email = (authUser.email ?? "").trim().toLowerCase();
+    const found = users.items.find((u) => (u.email ?? "").trim().toLowerCase() === email);
+    if (found && found.activo) {
       setCurrentUser(found);
       setAuthError(null);
+    } else if (found && !found.activo) {
+      // El usuario existe pero está marcado como inactivo.
+      setCurrentUser(null);
+      setAuthError(`Tu cuenta (${email}) está desactivada. Pedile a un administrador que la active.`);
     } else if (loadOk && users.items.length === 0) {
       // Bootstrap: base REALMENTE vacía (y la carga funcionó) → el primer usuario
       // autenticado entra como super_admin para poder correr el seed inicial.
@@ -194,8 +198,9 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser(null);
       setAuthError("No se pudieron cargar los datos. Revisá las Reglas de Firestore (deben permitir lectura a usuarios autenticados) y volvé a intentar.");
     } else {
+      // Autenticó con Google pero no hay ficha de usuario con ese email.
       setCurrentUser(null);
-      setAuthError("Tu cuenta no está autorizada en El Faro 360. Pedile a un administrador que te dé de alta.");
+      setAuthError(`La cuenta ${email} no está autorizada en El Faro 360. Verificá que un administrador la haya dado de alta con ese mismo email exacto.`);
     }
   }, [authUser, authReady, dataReady, loadOk, users.items]);
 
@@ -215,17 +220,26 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
     if (!auth) throw new Error("Firebase no está configurado.");
     setAuthError(null);
     const provider = new GoogleAuthProvider();
-    const esMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    // En celular el popup suele estar bloqueado; redirect es mucho más confiable.
-    if (esMobile) {
-      await signInWithRedirect(auth, provider);
-      return;
-    }
+    // Siempre deja elegir la cuenta (evita que el celular entre con otra cuenta de Google por defecto).
+    provider.setCustomParameters({ prompt: "select_account" });
+    // Popup primero: completa el login en su propia ventana y devuelve el
+    // resultado directo. Es mucho más confiable que redirect, que hoy se rompe
+    // por el bloqueo de cookies de terceros (el usuario vuelve al login sin sesión).
     try {
       await signInWithPopup(auth, provider);
-    } catch {
-      // Si el popup falla (bloqueado o cerrado), caemos a redirect.
-      await signInWithRedirect(auth, provider);
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code ?? "";
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        // El usuario cerró el popup: no es un error real, no mostramos nada.
+        return;
+      }
+      if (code === "auth/popup-blocked") {
+        // El navegador bloqueó el popup → último recurso: redirect.
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      console.error("[firebase] loginWithGoogle", e);
+      setAuthError("No se pudo iniciar sesión con Google. Probá de nuevo o avisá al administrador.");
     }
   }, []);
 
