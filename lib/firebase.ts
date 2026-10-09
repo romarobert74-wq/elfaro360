@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getAuth, type Auth } from "firebase/auth";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // Config de Firebase leída desde variables de entorno públicas.
 // Se cargan en Vercel (Settings → Environment Variables) y en .env.local para desarrollo.
@@ -19,14 +20,16 @@ export const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfi
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null;
 
 /** Devuelve las instancias de Firebase (o null si no está configurado). Inicialización perezosa. */
-export function getFirebase(): { app: FirebaseApp | null; db: Firestore | null; auth: Auth | null } {
-  if (!firebaseConfigured) return { app: null, db: null, auth: null };
+export function getFirebase(): { app: FirebaseApp | null; db: Firestore | null; auth: Auth | null; storage: FirebaseStorage | null } {
+  if (!firebaseConfigured) return { app: null, db: null, auth: null, storage: null };
   if (!app) {
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
+    storage = getStorage(app);
   }
-  return { app, db, auth };
+  return { app, db, auth, storage };
 }

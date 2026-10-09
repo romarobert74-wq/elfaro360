@@ -75,6 +75,17 @@ export const appSettings: AppSettings = {
     { id: "z2", nombre: "Zona 2 (20 a 40 km)", kmHasta: 40, costo: 55000 },
     { id: "z3", nombre: "Zona 3 (más de 40 km)", kmHasta: null, costo: null }, // a consultar
   ],
+  infoUtil: {
+    enlaces: [
+      { id: "enl-1", categoria: "Mendoza Bureau", titulo: "Mendoza Bureau", url: "https://mendoza-bureau.vercel.app" },
+      { id: "enl-2", categoria: "Ejemplos de tours", titulo: "Amerian Chacras de Coria", url: "https://elfaro360.vercel.app/tours/amerian-chacras/ir-a.html" },
+    ],
+    manuales: [
+      { id: "man-1", titulo: "Configuración de la cámara 360", contenido: "Pasos para configurar la cámara antes del relevamiento…\n\n1. …\n2. …" },
+      { id: "man-2", titulo: "Edición de fotos", contenido: "Flujo de edición de las fotos…" },
+      { id: "man-3", titulo: "Armar un tour en 3DVista", contenido: "Pasos para armar el tour en 3DVista…" },
+    ],
+  },
 };
 
 // ---------- Usuarios del sistema ----------
@@ -128,6 +139,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: true },
     cobros: { view: true, edit: true },
     reportes: { view: true, edit: true },
+    info: { view: true, edit: true },
     configuracion: { view: true, edit: true },
     usuarios: { view: true, edit: true },
     permisos: { view: true, edit: true },
@@ -146,6 +158,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: true },
     cobros: { view: true, edit: true },
     reportes: { view: true, edit: true },
+    info: { view: true, edit: true },
     configuracion: { view: true, edit: true },
     usuarios: { view: true, edit: false },
     permisos: { view: true, edit: false },
@@ -164,6 +177,7 @@ export const permissionMatrix: PermissionMatrix = {
     pagos: { view: true, edit: false },
     cobros: { view: false, edit: false },
     reportes: { view: false, edit: false },
+    info: { view: true, edit: false },
     configuracion: { view: false, edit: false },
     usuarios: { view: false, edit: false },
     permisos: { view: false, edit: false },
