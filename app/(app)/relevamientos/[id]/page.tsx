@@ -211,7 +211,7 @@ export default function RelevamientoWizardPage() {
           <Icon name="arrowLeft" size={16} /> {paso > 1 ? "Anterior" : "Volver"}
         </button>
         <div className="flex items-center gap-2">
-          {editable && <button className="btn-ghost" onClick={() => guardar()}>Guardar</button>}
+          {editable && <button className="btn-ghost" onClick={() => { guardar(); router.push("/relevamientos"); }}>Guardar</button>}
           {paso < 3 && <button className="btn-primary" onClick={() => irA(paso + 1)}>Siguiente <Icon name="arrowRight" size={16} /></button>}
         </div>
       </div>
