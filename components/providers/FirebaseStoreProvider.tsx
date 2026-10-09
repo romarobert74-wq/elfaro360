@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User as FirebaseUser,
 } from "firebase/auth";
@@ -160,6 +162,8 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       setAuthReady(true);
       return;
     }
+    // Completa el login con Google por redirect (celular) y surfacea errores.
+    getRedirectResult(auth).catch((e) => console.error("[firebase] redirect result", e));
     const unsub = onAuthStateChanged(auth, (fbUser) => {
       setAuthUser(fbUser);
       setAuthReady(true);
@@ -210,7 +214,19 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
     const { auth } = getFirebase();
     if (!auth) throw new Error("Firebase no está configurado.");
     setAuthError(null);
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    const esMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    // En celular el popup suele estar bloqueado; redirect es mucho más confiable.
+    if (esMobile) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    try {
+      await signInWithPopup(auth, provider);
+    } catch {
+      // Si el popup falla (bloqueado o cerrado), caemos a redirect.
+      await signInWithRedirect(auth, provider);
+    }
   }, []);
 
   const logout = useCallback(() => {
