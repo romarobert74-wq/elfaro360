@@ -22,6 +22,7 @@ export const navItems: NavItem[] = [
   { key: "relevamientos", label: "Relevamientos", href: "/relevamientos", icon: "check", group: "Producción" },
   { key: "agenda", label: "Agenda", href: "/agenda", icon: "agenda", group: "Producción" },
   { key: "empleados", label: "Empleados", href: "/empleados", icon: "empleados", group: "Producción" },
+  { key: "info", label: "Info útil", href: "/info", icon: "globe", group: "Producción" },
 
   { key: "costos", label: "Costos", href: "/costos", icon: "costos", group: "Finanzas" },
   { key: "pagos", label: "Pagos a Empleados", href: "/pagos", icon: "pagos", group: "Finanzas" },

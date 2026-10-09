@@ -16,6 +16,7 @@ export type ModuleKey =
   | "pagos"
   | "cobros"
   | "reportes"
+  | "info"
   | "configuracion"
   | "usuarios"
   | "permisos";
@@ -275,6 +276,19 @@ export interface CatalogoTipoCliente extends CatalogoItem {
   permiteCuotas: boolean; // habilita "pago en 2 cuotas" en el presupuesto
 }
 
+// ===== Info útil (menú de recursos para el equipo) =====
+export interface InfoEnlace {
+  id: string;
+  categoria: string; // ej. "Mendoza Bureau", "Interno", "Ejemplos de tours"
+  titulo: string;
+  url: string;
+}
+export interface InfoManual {
+  id: string;
+  titulo: string;
+  contenido: string; // texto del procedimiento
+}
+
 export interface AppSettings {
   empresa: {
     nombre: string;
@@ -307,6 +321,11 @@ export interface AppSettings {
   numeroInicialPresupuesto: number;
   // Zonas de traslado (lo que se le cobra al cliente por desplazamiento)
   zonas: ZonaTraslado[];
+  // Info útil (recursos para el equipo). Opcional: puede faltar en settings viejos.
+  infoUtil?: {
+    enlaces: InfoEnlace[];
+    manuales: InfoManual[];
+  };
 }
 
 // ===== Cobros =====
