@@ -98,62 +98,77 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
     void saveSettings(s).catch((e) => console.error("[settings] save", e));
   }, []);
 
-  // Carga inicial desde Firestore
+  // Carga de datos desde Firestore. Las Reglas exigen estar autenticado, así
+  // que SOLO cargamos una vez que hay sesión. Sin sesión mostramos el login sin
+  // intentar leer (si no, el read se rechaza y queda el error de "no se pudieron
+  // cargar los datos" para siempre). Al autenticar, este efecto vuelve a correr
+  // con el token válido y recarga todo.
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const [u, cl, de, se, co, pr, or, re, em, pa, cb, nt, perms, sett] = await Promise.all([
-        fetchCollection<User>("users"),
-        fetchCollection<Cliente>("clientes"),
-        fetchCollection<Destino>("destinos"),
-        fetchCollection<Servicio>("servicios"),
-        fetchCollection<Costo>("costos"),
-        fetchCollection<Presupuesto>("presupuestos"),
-        fetchCollection<OrdenTrabajo>("ordenes"),
-        fetchCollection<Relevamiento>("relevamientos"),
-        fetchCollection<Empleado>("empleados"),
-        fetchCollection<PagoEmpleado>("pagosEmpleados"),
-        fetchCollection<Cobro>("cobros"),
-        fetchCollection<AgendaNota>("notasAgenda"),
-        fetchPermissions(),
-        fetchSettings(),
-      ]);
-      if (!alive) return;
-      users.setItems(u);
-      clientes.setItems(cl);
-      destinos.setItems(de);
-      servicios.setItems(se);
-      costos.setItems(co);
-      presupuestos.setItems(pr);
-      ordenes.setItems(or.map(normalizeOrden));
-      relevamientos.setItems(re.map(normalizeRelevamiento));
-      empleados.setItems(em);
-      pagos.setItems(pa.map(normalizePago));
-      cobros.setItems(cb);
-      notas.setItems(nt);
-      // Combina la matriz guardada con los valores por defecto, para que los
-      // módulos nuevos (ej. relevamientos) aparezcan aunque Firestore tenga una
-      // matriz vieja. Lo guardado tiene prioridad sobre el default.
-      if (perms) {
-        const base = clone(mock.permissionMatrix) as PermissionMatrix;
-        (Object.keys(perms) as (keyof PermissionMatrix)[]).forEach((role) => {
-          base[role] = { ...base[role], ...perms[role] };
-        });
-        setPermissions(base);
-      }
-      if (sett) setSettingsState(sett);
-      setLoadOk(true);
-      setDataReady(true);
-    })().catch((e) => {
-      console.error("[firebase] carga inicial", e);
+    if (!authReady) return; // todavía no sabemos si hay sesión
+    if (!authUser) {
+      // Sin usuario autenticado: no leemos (las reglas lo rechazarían). Mostramos login.
       setLoadOk(false);
       setDataReady(true);
-    });
+      return;
+    }
+    let alive = true;
+    setDataReady(false); // recargando con el token válido
+    (async () => {
+      try {
+        const [u, cl, de, se, co, pr, or, re, em, pa, cb, nt, perms, sett] = await Promise.all([
+          fetchCollection<User>("users"),
+          fetchCollection<Cliente>("clientes"),
+          fetchCollection<Destino>("destinos"),
+          fetchCollection<Servicio>("servicios"),
+          fetchCollection<Costo>("costos"),
+          fetchCollection<Presupuesto>("presupuestos"),
+          fetchCollection<OrdenTrabajo>("ordenes"),
+          fetchCollection<Relevamiento>("relevamientos"),
+          fetchCollection<Empleado>("empleados"),
+          fetchCollection<PagoEmpleado>("pagosEmpleados"),
+          fetchCollection<Cobro>("cobros"),
+          fetchCollection<AgendaNota>("notasAgenda"),
+          fetchPermissions(),
+          fetchSettings(),
+        ]);
+        if (!alive) return;
+        users.setItems(u);
+        clientes.setItems(cl);
+        destinos.setItems(de);
+        servicios.setItems(se);
+        costos.setItems(co);
+        presupuestos.setItems(pr);
+        ordenes.setItems(or.map(normalizeOrden));
+        relevamientos.setItems(re.map(normalizeRelevamiento));
+        empleados.setItems(em);
+        pagos.setItems(pa.map(normalizePago));
+        cobros.setItems(cb);
+        notas.setItems(nt);
+        // Combina la matriz guardada con los valores por defecto, para que los
+        // módulos nuevos (ej. relevamientos) aparezcan aunque Firestore tenga una
+        // matriz vieja. Lo guardado tiene prioridad sobre el default.
+        if (perms) {
+          const base = clone(mock.permissionMatrix) as PermissionMatrix;
+          (Object.keys(perms) as (keyof PermissionMatrix)[]).forEach((role) => {
+            base[role] = { ...base[role], ...perms[role] };
+          });
+          setPermissions(base);
+        }
+        if (sett) setSettingsState(sett);
+        setLoadOk(true);
+      } catch (e) {
+        if (!alive) return;
+        console.error("[firebase] carga de datos", e);
+        setLoadOk(false);
+      } finally {
+        if (alive) setDataReady(true);
+      }
+    })();
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authReady, authUser]);
 
   // Escuchar el estado de autenticación (Firebase Auth)
   useEffect(() => {
