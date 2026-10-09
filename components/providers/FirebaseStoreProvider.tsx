@@ -178,11 +178,15 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser(null);
       return;
     }
-    const email = (authUser.email ?? "").toLowerCase();
-    const found = users.items.find((u) => u.email.toLowerCase() === email && u.activo);
-    if (found) {
+    const email = (authUser.email ?? "").trim().toLowerCase();
+    const found = users.items.find((u) => (u.email ?? "").trim().toLowerCase() === email);
+    if (found && found.activo) {
       setCurrentUser(found);
       setAuthError(null);
+    } else if (found && !found.activo) {
+      // El usuario existe pero está marcado como inactivo.
+      setCurrentUser(null);
+      setAuthError(`Tu cuenta (${email}) está desactivada. Pedile a un administrador que la active.`);
     } else if (loadOk && users.items.length === 0) {
       // Bootstrap: base REALMENTE vacía (y la carga funcionó) → el primer usuario
       // autenticado entra como super_admin para poder correr el seed inicial.
@@ -194,8 +198,9 @@ export function FirebaseStoreProvider({ children }: { children: React.ReactNode 
       setCurrentUser(null);
       setAuthError("No se pudieron cargar los datos. Revisá las Reglas de Firestore (deben permitir lectura a usuarios autenticados) y volvé a intentar.");
     } else {
+      // Autenticó con Google pero no hay ficha de usuario con ese email.
       setCurrentUser(null);
-      setAuthError("Tu cuenta no está autorizada en El Faro 360. Pedile a un administrador que te dé de alta.");
+      setAuthError(`La cuenta ${email} no está autorizada en El Faro 360. Verificá que un administrador la haya dado de alta con ese mismo email exacto.`);
     }
   }, [authUser, authReady, dataReady, loadOk, users.items]);
 

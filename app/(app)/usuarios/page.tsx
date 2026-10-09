@@ -38,7 +38,7 @@ export default function UsuariosPage() {
   const openEdit = (u: User) => { setEditing(u); const { id, ...rest } = u; setForm(rest); setModal(true); };
   const save = () => {
     if (!form.nombre.trim() || !form.email.trim()) return;
-    const clean = { ...form, empleadoId: form.role === "empleado" ? form.empleadoId : undefined };
+    const clean = { ...form, nombre: form.nombre.trim(), email: form.email.trim().toLowerCase(), empleadoId: form.role === "empleado" ? form.empleadoId : undefined };
     if (editing) updateUser({ ...clean, id: editing.id });
     else addUser({ ...clean, id: uid("usr") });
     setModal(false);
