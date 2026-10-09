@@ -287,6 +287,13 @@ export interface InfoManual {
   id: string;
   titulo: string;
   contenido: string; // texto del procedimiento
+  archivoUrl?: string; // PDF / Word adjunto (Firebase Storage)
+  archivoNombre?: string; // nombre original del archivo
+}
+export interface InfoServicioUsd {
+  id: string;
+  nombre: string;
+  valorUsd: number;
 }
 
 export interface AppSettings {
@@ -325,6 +332,7 @@ export interface AppSettings {
   infoUtil?: {
     enlaces: InfoEnlace[];
     manuales: InfoManual[];
+    serviciosUsd?: InfoServicioUsd[]; // servicios adicionales con valor en USD
   };
 }
 
