@@ -9,7 +9,6 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Icon } from "@/components/Icon";
 import { useStore } from "@/components/providers/StoreProvider";
 import { uid } from "@/lib/format";
-import { getFirebase } from "@/lib/firebase";
 import type { InfoEnlace, InfoManual, InfoServicioUsd } from "@/lib/types";
 
 // Servicios adicionales por defecto (en USD). Se usan si aún no se cargaron en Configuración.
@@ -47,8 +46,6 @@ export default function InfoUtilPage() {
   const [delEnlace, setDelEnlace] = useState<string | null>(null);
   const [delManual, setDelManual] = useState<string | null>(null);
   const [delServicio, setDelServicio] = useState<string | null>(null);
-  const [subiendo, setSubiendo] = useState(false);
-  const [errorArchivo, setErrorArchivo] = useState<string | null>(null);
 
   const saveInfo = (next: Partial<InfoData>) =>
     updateSettings({ ...settings, infoUtil: { ...info, ...next } });
@@ -62,8 +59,16 @@ export default function InfoUtilPage() {
   };
   const guardarManual = () => {
     if (!manualForm || !manualForm.titulo.trim()) return;
-    const existe = info.manuales.some((m) => m.id === manualForm.id);
-    const manuales = existe ? info.manuales.map((m) => (m.id === manualForm.id ? manualForm : m)) : [...info.manuales, manualForm];
+    // Armamos un objeto limpio: Firestore rechaza campos con valor undefined,
+    // así que solo incluimos el archivo adjunto si tiene enlace.
+    const limpio: InfoManual = { id: manualForm.id, titulo: manualForm.titulo.trim(), contenido: manualForm.contenido };
+    const url = manualForm.archivoUrl?.trim();
+    if (url) {
+      limpio.archivoUrl = url;
+      limpio.archivoNombre = manualForm.archivoNombre?.trim() || "Abrir archivo";
+    }
+    const existe = info.manuales.some((m) => m.id === limpio.id);
+    const manuales = existe ? info.manuales.map((m) => (m.id === limpio.id ? limpio : m)) : [...info.manuales, limpio];
     saveInfo({ manuales });
     setManualForm(null);
   };
@@ -73,30 +78,6 @@ export default function InfoUtilPage() {
     const serviciosUsd = existe ? info.serviciosUsd.map((s) => (s.id === servicioForm.id ? servicioForm : s)) : [...info.serviciosUsd, servicioForm];
     saveInfo({ serviciosUsd });
     setServicioForm(null);
-  };
-
-  // Subida de archivo (PDF / Word) a Firebase Storage
-  const subirArchivo = async (file: File) => {
-    if (!manualForm) return;
-    setErrorArchivo(null);
-    const { storage } = getFirebase();
-    if (!storage) {
-      setErrorArchivo("La subida de archivos requiere Firebase Storage configurado.");
-      return;
-    }
-    setSubiendo(true);
-    try {
-      const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
-      const nombre = `${Date.now()}-${file.name}`;
-      const storageRef = ref(storage, `manuales/${nombre}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setManualForm({ ...manualForm, archivoUrl: url, archivoNombre: file.name });
-    } catch {
-      setErrorArchivo("No se pudo subir el archivo. Revisá la conexión o los permisos de Storage.");
-    } finally {
-      setSubiendo(false);
-    }
   };
 
   // Enlaces agrupados por categoría
@@ -152,7 +133,7 @@ export default function InfoUtilPage() {
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Manuales y procedimientos</h2>
-          {editable && <button className="btn-ghost text-sm" onClick={() => { setErrorArchivo(null); setManualForm({ id: uid("man"), titulo: "", contenido: "" }); }}><Icon name="plus" size={15} /> Agregar manual</button>}
+          {editable && <button className="btn-ghost text-sm" onClick={() => setManualForm({ id: uid("man"), titulo: "", contenido: "" })}><Icon name="plus" size={15} /> Agregar manual</button>}
         </div>
         {info.manuales.length === 0 ? (
           <p className="text-sm text-content-muted">Sin manuales cargados.</p>
@@ -170,7 +151,7 @@ export default function InfoUtilPage() {
                     </button>
                     {editable && (
                       <div className="flex shrink-0 items-center gap-1">
-                        <button onClick={() => { setErrorArchivo(null); setManualForm(m); }} className="rounded-md p-1 text-content-muted transition hover:text-brand"><Icon name="edit" size={14} /></button>
+                        <button onClick={() => setManualForm(m)} className="rounded-md p-1 text-content-muted transition hover:text-brand"><Icon name="edit" size={14} /></button>
                         <button onClick={() => setDelManual(m.id)} className="rounded-md p-1 text-content-muted transition hover:text-spectrum-red"><Icon name="trash" size={14} /></button>
                       </div>
                     )}
@@ -250,30 +231,18 @@ export default function InfoUtilPage() {
           <div className="grid gap-4">
             <Field label="Título *"><TextInput value={manualForm.titulo} onChange={(e) => setManualForm({ ...manualForm, titulo: e.target.value })} placeholder="Ej. Configuración de la cámara" /></Field>
             <Field label="Contenido" hint="Opcional si adjuntás un archivo"><TextArea value={manualForm.contenido} onChange={(e) => setManualForm({ ...manualForm, contenido: e.target.value })} className="min-h-[180px]" placeholder="Escribí el procedimiento paso a paso…" /></Field>
-            <Field label="Archivo adjunto (PDF o Word)" hint="Opcional">
-              <div className="space-y-2">
-                {manualForm.archivoUrl ? (
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2 text-sm">
-                    <a href={manualForm.archivoUrl} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-2 font-medium text-brand hover:underline">
-                      <Icon name="external" size={14} className="shrink-0" />
-                      <span className="truncate">{manualForm.archivoNombre || "Archivo adjunto"}</span>
-                    </a>
-                    <button onClick={() => setManualForm({ id: manualForm.id, titulo: manualForm.titulo, contenido: manualForm.contenido })} className="rounded-md p-1 text-content-muted transition hover:text-spectrum-red"><Icon name="trash" size={14} /></button>
-                  </div>
-                ) : (
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-line px-3 py-2 text-sm text-content-muted transition hover:border-brand hover:text-brand">
-                    <Icon name="plus" size={14} />
-                    {subiendo ? "Subiendo…" : "Seleccionar PDF o Word"}
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      className="hidden"
-                      disabled={subiendo}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) subirArchivo(f); e.target.value = ""; }}
-                    />
-                  </label>
-                )}
-                {errorArchivo && <p className="text-xs text-spectrum-red">{errorArchivo}</p>}
+            <Field label="Archivo adjunto (PDF o Word)" hint="Opcional. Subí el archivo a Google Drive, compartilo (que cualquiera con el enlace pueda ver) y pegá acá el link.">
+              <div className="grid gap-2">
+                <TextInput
+                  value={manualForm.archivoUrl ?? ""}
+                  onChange={(e) => setManualForm({ ...manualForm, archivoUrl: e.target.value || undefined })}
+                  placeholder="https://drive.google.com/…"
+                />
+                <TextInput
+                  value={manualForm.archivoNombre ?? ""}
+                  onChange={(e) => setManualForm({ ...manualForm, archivoNombre: e.target.value || undefined })}
+                  placeholder="Nombre a mostrar (ej. Manual cámara.pdf)"
+                />
               </div>
             </Field>
           </div>
