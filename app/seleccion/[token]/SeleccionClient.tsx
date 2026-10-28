@@ -45,9 +45,7 @@ export function SeleccionClient({ token }: { token: string }) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [visorId, setVisorId] = useState<string | null>(null);
   const [confirmar, setConfirmar] = useState(false);
-  const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState<number | null>(null);
-  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -102,28 +100,22 @@ export function SeleccionClient({ token }: { token: string }) {
     });
   }, []);
 
-  const enviar = useCallback(async () => {
-    setEnviando(true);
-    setErrorEnvio(null);
-    try {
-      const res = await fetch("/api/pictures/seleccion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          fotos: seleccion.map((fileId, orden) => ({ fileId, orden })),
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || "Error");
-      setEnviado(data.total ?? seleccion.length);
-    } catch (e) {
-      setErrorEnvio(e instanceof Error && e.message !== "Error" ? e.message : "No se pudo enviar. Probá de nuevo.");
-    } finally {
-      setEnviando(false);
-      setConfirmar(false);
-    }
-  }, [token, seleccion]);
+  // Arma el link de WhatsApp a El Faro con la lista ordenada.
+  const waUrl = useCallback(() => {
+    const numero = (process.env.NEXT_PUBLIC_PICTURES_WHATSAPP || "").replace(/\D/g, "");
+    const lineas = seleccion.map((id, i) => `${i + 1}. ${fotosPorId.get(id)?.nombre ?? id}`).join("\n");
+    const texto =
+      `*Selección de fotos 360* — ${socio || "Socio"}\n` +
+      `Estas son las ${seleccion.length} fotos que elegí, en orden para el tour:\n\n${lineas}`;
+    const base = numero ? `https://wa.me/${numero}` : "https://wa.me/";
+    return `${base}?text=${encodeURIComponent(texto)}`;
+  }, [seleccion, fotosPorId, socio]);
+
+  const enviar = useCallback(() => {
+    window.open(waUrl(), "_blank", "noopener,noreferrer");
+    setEnviado(seleccion.length);
+    setConfirmar(false);
+  }, [waUrl, seleccion.length]);
 
   // ---- Pantalla de éxito ----
   if (enviado !== null) {
@@ -132,10 +124,13 @@ export function SeleccionClient({ token }: { token: string }) {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand/15 text-brand">
           <Icon name="check" size={40} />
         </div>
-        <h1 className="font-display text-2xl font-bold">¡Selección enviada!</h1>
+        <h1 className="font-display text-2xl font-bold">¡Listo!</h1>
         <p className="text-content-muted">
-          Recibimos tus <b>{enviado}</b> fotos en el orden que elegiste. Vamos a armar tu tour 360 con eso. ¡Gracias{socio ? `, ${socio}` : ""}!
+          Se abrió WhatsApp con tus <b>{enviado}</b> fotos en orden. <b>Tocá enviar</b> en WhatsApp para que nos llegue. Con eso armamos tu tour 360. ¡Gracias{socio ? `, ${socio}` : ""}!
         </p>
+        <a href={waUrl()} target="_blank" rel="noopener noreferrer" className="btn-primary">
+          <Icon name="whatsapp" size={18} /> Abrir WhatsApp de nuevo
+        </a>
       </main>
     );
   }
@@ -288,16 +283,15 @@ export function SeleccionClient({ token }: { token: string }) {
 
       {/* Confirmación de envío */}
       {confirmar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => !enviando && setConfirmar(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setConfirmar(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-line bg-surface-base p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-bold">Enviar selección</h3>
+            <h3 className="font-display text-lg font-bold">Enviar por WhatsApp</h3>
             <p className="mt-1 text-sm text-content-muted">
-              Vas a enviar <b>{seleccion.length}</b> {seleccion.length === 1 ? "foto" : "fotos"} en el orden elegido. ¿Confirmás?
+              Vamos a abrir WhatsApp con tus <b>{seleccion.length}</b> {seleccion.length === 1 ? "foto" : "fotos"} en el orden elegido. Después tocá <b>enviar</b> en WhatsApp.
             </p>
-            {errorEnvio && <p className="mt-2 text-sm text-spectrum-red">{errorEnvio}</p>}
             <div className="mt-4 flex justify-end gap-2">
-              <button className="btn-ghost" onClick={() => setConfirmar(false)} disabled={enviando}>Cancelar</button>
-              <button className="btn-primary" onClick={enviar} disabled={enviando}>{enviando ? "Enviando…" : "Confirmar y enviar"}</button>
+              <button className="btn-ghost" onClick={() => setConfirmar(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={enviar}><Icon name="whatsapp" size={16} /> Abrir WhatsApp</button>
             </div>
           </div>
         </div>

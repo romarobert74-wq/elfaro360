@@ -1,38 +1,31 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { requirePicturesAdmin } from "@/lib/server/apiAuth";
-import { verifyToken } from "@/lib/server/selectionToken";
-import { downloadFile, fileInAnySocio, fileInFolder } from "@/lib/server/drive";
+import { decodeToken, downloadFile, esSocioValido, fileInFolder } from "@/lib/server/driveApi";
 
 export const runtime = "nodejs";
-// La respuesta define su propio Cache-Control para que la CDN de Vercel la sirva.
 export const dynamic = "force-dynamic";
 
 /**
  * Proxy de imágenes de Drive.
  *   GET /api/pictures/img/<fileId>?size=thumb|preview&token=<token>
  * Nunca devuelve el original (Vercel corta >4,5 MB). Redimensiona con sharp.
- * Valida que el fileId pertenezca a una carpeta autorizada antes de servir.
+ * Valida que el archivo pertenezca a la carpeta del token y que esa carpeta
+ * sea un socio válido (no un proxy abierto de imágenes).
  */
 export async function GET(req: Request, { params }: { params: { fileId: string } }) {
   const fileId = params.fileId;
   const { searchParams } = new URL(req.url);
   const size = searchParams.get("size") === "thumb" ? "thumb" : "preview";
-  const token = searchParams.get("token");
+  const token = searchParams.get("token") || "";
 
-  // ---- Autorización: el archivo debe estar en una carpeta permitida ----
-  let autorizado = false;
-  if (token) {
-    const folderId = verifyToken(token);
-    if (folderId) autorizado = await fileInFolder(fileId, folderId);
-  } else {
-    const auth = await requirePicturesAdmin(req);
-    if (auth.ok) autorizado = await fileInAnySocio(fileId);
-  }
-  if (!autorizado) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  const folderId = decodeToken(token);
+  if (!folderId) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   try {
-    const { data } = await downloadFile(fileId);
+    const [ok1, ok2] = await Promise.all([fileInFolder(fileId, folderId), esSocioValido(folderId)]);
+    if (!ok1 || !ok2) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+
+    const data = await downloadFile(fileId);
     const pipeline = sharp(data, { failOn: "none" }).rotate();
     const out =
       size === "thumb"
@@ -46,7 +39,6 @@ export async function GET(req: Request, { params }: { params: { fileId: string }
       status: 200,
       headers: {
         "Content-Type": "image/jpeg",
-        // La CDN de Vercel cachea un año; las próximas veces no pega a Drive.
         "Cache-Control": "public, s-maxage=31536000, max-age=86400, immutable",
       },
     });

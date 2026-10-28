@@ -1,40 +1,24 @@
 import { NextResponse } from "next/server";
-import { requirePicturesAdmin } from "@/lib/server/apiAuth";
-import { verifyToken } from "@/lib/server/selectionToken";
-import { getFolderName, listFotos } from "@/lib/server/drive";
+import { decodeToken, esSocioValido, getFolderName, listFotos } from "@/lib/server/driveApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Lista las fotos de un socio.
- * - Público: ?token=<token firmado>  → resuelve el folderId del token.
- * - Admin:   ?folderId=<id>          → requiere Authorization Bearer.
- */
+/** Fotos de un socio a partir del token público (?token=). */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token");
-
-  let folderId: string | null = null;
-
-  if (token) {
-    folderId = verifyToken(token);
-    if (!folderId) return NextResponse.json({ error: "Link inválido." }, { status: 404 });
-  } else {
-    const auth = await requirePicturesAdmin(req);
-    if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
-    folderId = searchParams.get("folderId");
-    if (!folderId) return NextResponse.json({ error: "Falta folderId." }, { status: 400 });
-  }
+  const token = searchParams.get("token") || "";
+  const folderId = decodeToken(token);
+  if (!folderId) return NextResponse.json({ error: "Link inválido." }, { status: 404 });
 
   try {
-    const [fotos, socioNombre] = await Promise.all([
-      listFotos(folderId),
-      token ? getFolderName(folderId) : Promise.resolve(null),
-    ]);
+    if (!(await esSocioValido(folderId))) {
+      return NextResponse.json({ error: "Link inválido." }, { status: 404 });
+    }
+    const [fotos, socioNombre] = await Promise.all([listFotos(folderId), getFolderName(folderId)]);
     return NextResponse.json({ fotos, socioNombre });
   } catch (e) {
     console.error("[pictures/fotos]", e);
-    return NextResponse.json({ error: "No se pudieron listar las fotos." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudieron cargar las fotos." }, { status: 500 });
   }
 }

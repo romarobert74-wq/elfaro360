@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { verifyToken } from "@/lib/server/selectionToken";
+import { decodeToken } from "@/lib/server/driveApi";
 import { SeleccionClient } from "./SeleccionClient";
 
 export const runtime = "nodejs";
@@ -10,8 +10,9 @@ export const metadata = {
 };
 
 export default function SeleccionPage({ params }: { params: { token: string } }) {
-  // Si la firma no valida → 404 (no revelamos nada).
-  const folderId = verifyToken(params.token);
+  // El token es base64url del folderId. La validez real (que sea un socio) se
+  // chequea al cargar las fotos.
+  const folderId = decodeToken(params.token);
   if (!folderId) notFound();
   return <SeleccionClient token={params.token} />;
 }
