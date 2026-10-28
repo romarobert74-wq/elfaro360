@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { navGroups, navItems } from "@/lib/nav";
 import { useStore } from "@/components/providers/StoreProvider";
+import { useSeleccionesNoLeidas } from "@/components/pictures/useSeleccionesBadge";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -16,6 +17,7 @@ function isActive(pathname: string, href: string) {
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { can, currentUser } = useStore();
+  const noLeidas = useSeleccionesNoLeidas();
 
   // El empleado nunca ve el Dashboard (ni aunque la matriz guardada lo permita)
   const visible = navItems.filter(
@@ -48,6 +50,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     )}
                     <Icon name={item.icon} size={18} />
                     <span className="truncate">{item.label}</span>
+                    {item.key === "pictures" && noLeidas > 0 && (
+                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-white shadow-glow-sm">
+                        {noLeidas}
+                      </span>
+                    )}
                   </>
                 );
                 return (

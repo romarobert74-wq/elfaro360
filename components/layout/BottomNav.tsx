@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { cn } from "@/lib/cn";
 import { navItems } from "@/lib/nav";
 import { useStore } from "@/components/providers/StoreProvider";
+import { useSeleccionesNoLeidas } from "@/components/pictures/useSeleccionesBadge";
 import type { ModuleKey } from "@/lib/types";
 
 const preferred: ModuleKey[] = ["dashboard", "presupuestos", "ordenes", "agenda", "clientes"];
@@ -18,6 +19,7 @@ function isActive(pathname: string, href: string) {
 export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const { can, currentUser } = useStore();
+  const noLeidas = useSeleccionesNoLeidas();
   // El empleado nunca ve el Dashboard (ni aunque la matriz guardada lo permita)
   const oculto = (k: string) => currentUser?.role === "empleado" && k === "dashboard";
 
@@ -46,9 +48,16 @@ export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
       })}
       <button
         onClick={onOpenMenu}
-        className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-content-subtle"
+        className="relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium text-content-subtle"
       >
-        <Icon name="menu" size={20} />
+        <span className="relative">
+          <Icon name="menu" size={20} />
+          {noLeidas > 0 && (
+            <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-bold text-white">
+              {noLeidas}
+            </span>
+          )}
+        </span>
         <span>Más</span>
       </button>
     </nav>
