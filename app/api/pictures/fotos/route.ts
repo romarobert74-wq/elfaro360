@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePicturesAdmin } from "@/lib/server/apiAuth";
 import { verifyToken } from "@/lib/server/selectionToken";
-import { listFotos } from "@/lib/server/drive";
+import { getFolderName, listFotos } from "@/lib/server/drive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,8 +28,11 @@ export async function GET(req: Request) {
   }
 
   try {
-    const fotos = await listFotos(folderId);
-    return NextResponse.json({ fotos });
+    const [fotos, socioNombre] = await Promise.all([
+      listFotos(folderId),
+      token ? getFolderName(folderId) : Promise.resolve(null),
+    ]);
+    return NextResponse.json({ fotos, socioNombre });
   } catch (e) {
     console.error("[pictures/fotos]", e);
     return NextResponse.json({ error: "No se pudieron listar las fotos." }, { status: 500 });

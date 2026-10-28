@@ -72,6 +72,17 @@ export async function listFotos(folderId: string): Promise<FotoDrive[]> {
   return out;
 }
 
+/** Nombre de una carpeta (o null si no existe / sin acceso). */
+export async function getFolderName(folderId: string): Promise<string | null> {
+  try {
+    const drive = getDrive();
+    const res = await drive.files.get({ fileId: folderId, fields: "name", ...SHARED });
+    return res.data.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Devuelve los padres (carpetas) de un archivo. */
 async function getParents(fileId: string): Promise<string[]> {
   const drive = getDrive();
