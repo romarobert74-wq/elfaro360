@@ -17,6 +17,7 @@ export type ModuleKey =
   | "cobros"
   | "reportes"
   | "info"
+  | "pictures"
   | "configuracion"
   | "usuarios"
   | "permisos";
@@ -334,6 +335,26 @@ export interface AppSettings {
     manuales: InfoManual[];
     serviciosUsd?: InfoServicioUsd[]; // servicios adicionales con valor en USD
   };
+}
+
+// ===== Selección Pictures (panoramas 360 elegidos por el socio desde Drive) =====
+export type EstadoSeleccion = "nueva" | "en_proceso" | "tour_armado";
+
+export interface SeleccionFoto {
+  fileId: string;
+  nombre: string;
+  orden: number;
+}
+
+export interface SeleccionPicture {
+  id: string;
+  socioFolderId: string;
+  socioNombre: string;
+  fotos: SeleccionFoto[];
+  estado: EstadoSeleccion;
+  leida: boolean;
+  carpetaSeleccionUrl?: string; // carpeta "Seleccionadas AAAA-MM-DD" en Drive
+  creadoEn: string; // ISO
 }
 
 // ===== Cobros =====
