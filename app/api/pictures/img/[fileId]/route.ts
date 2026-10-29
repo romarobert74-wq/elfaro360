@@ -23,14 +23,16 @@ export async function GET(req: Request, { params }: { params: { fileId: string }
 
   try {
     const data = await downloadFile(fileId);
-    const pipeline = sharp(data, { failOn: "none" }).rotate();
+    // IMPORTANTE: no aplicamos .rotate() (orientación EXIF). Una foto 360
+    // equirectangular debe mantenerse tal cual; reorientarla rompe el mapeo
+    // esférico y ensucia los polos (arriba/abajo). Solo redimensionamos
+    // preservando el aspecto exacto 2:1. limitInputPixels:false por si la foto
+    // es muy grande (360 de alta resolución).
+    const pipeline = sharp(data, { failOn: "none", limitInputPixels: false });
     const out =
       size === "thumb"
         ? await pipeline.resize({ width: 600, withoutEnlargement: true }).jpeg({ quality: 72 }).toBuffer()
-        : await pipeline
-            .resize({ width: 4096, height: 2048, fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality: 80 })
-            .toBuffer();
+        : await pipeline.resize({ width: 4096, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
 
     return new NextResponse(new Uint8Array(out), {
       status: 200,
