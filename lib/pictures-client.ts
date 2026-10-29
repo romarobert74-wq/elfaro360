@@ -5,11 +5,20 @@ export interface SocioDrive {
   nombre: string;
 }
 
-/** Lista las carpetas de socios desde Drive (vía API key del servidor). */
-export async function fetchSocios(): Promise<SocioDrive[]> {
-  const res = await fetch("/api/pictures/socios");
-  if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || "Error al listar socios.");
-  return (await res.json()).socios ?? [];
+export interface ExplorarData {
+  folderId: string;
+  nombre: string;
+  folders: SocioDrive[];
+  fotosCount: number;
+  esRaiz: boolean;
+}
+
+/** Explora una carpeta de Drive (sin folderId = raíz). */
+export async function fetchExplorar(folderId?: string): Promise<ExplorarData> {
+  const url = folderId ? `/api/pictures/explorar?folderId=${encodeURIComponent(folderId)}` : "/api/pictures/explorar";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || "Error al leer la carpeta.");
+  return await res.json();
 }
 
 /** Token del link = base64url(folderId). Las carpetas ya son públicas. */

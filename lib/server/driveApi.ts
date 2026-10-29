@@ -36,13 +36,13 @@ async function driveGet(path: string, params: string): Promise<Response> {
   return fetch(url);
 }
 
-/** Subcarpetas de la carpeta raíz = socios. */
-export async function listSocios(): Promise<Socio[]> {
+/** Subcarpetas de una carpeta. */
+export async function listSubfolders(folderId: string): Promise<Socio[]> {
   const out: Socio[] = [];
   let pageToken: string | undefined;
   do {
     const q = encodeURIComponent(
-      `'${rootFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+      `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
     );
     const params = `q=${q}&fields=${encodeURIComponent("nextPageToken,files(id,name)")}&orderBy=name&pageSize=200${pageToken ? `&pageToken=${pageToken}` : ""}`;
     const res = await driveGet("/files", params);
@@ -52,6 +52,11 @@ export async function listSocios(): Promise<Socio[]> {
     pageToken = data.nextPageToken;
   } while (pageToken);
   return out;
+}
+
+/** Subcarpetas de la carpeta raíz (primer nivel). */
+export async function listSocios(): Promise<Socio[]> {
+  return listSubfolders(rootFolderId());
 }
 
 /** Fotos (imágenes) dentro de la carpeta de un socio, sin papelera. */
@@ -82,13 +87,22 @@ export async function getFolderName(folderId: string): Promise<string | null> {
   return data.name ?? null;
 }
 
-/** True si folderId es una subcarpeta de la raíz (socio válido). */
-export async function esSocioValido(folderId: string): Promise<boolean> {
-  const socios = await listSocios();
-  return socios.some((s) => s.id === folderId);
+/** True si folderId es la raíz o un descendiente de la raíz (a cualquier nivel). */
+export async function esDescendienteDeRaiz(folderId: string, maxDepth = 10): Promise<boolean> {
+  const root = rootFolderId();
+  if (folderId === root) return true;
+  let current = folderId;
+  for (let i = 0; i < maxDepth; i++) {
+    const parents = await getParents(current);
+    if (parents.length === 0) return false;
+    if (parents.includes(root)) return true;
+    current = parents[0]!;
+    if (current === root) return true;
+  }
+  return false;
 }
 
-/** Padres de un archivo. */
+/** Padres de un archivo/carpeta. */
 async function getParents(fileId: string): Promise<string[]> {
   const res = await driveGet(`/files/${encodeURIComponent(fileId)}`, "fields=parents");
   if (!res.ok) return [];
