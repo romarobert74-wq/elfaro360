@@ -87,38 +87,6 @@ export async function getFolderName(folderId: string): Promise<string | null> {
   return data.name ?? null;
 }
 
-/** True si folderId es la raíz o un descendiente de la raíz (a cualquier nivel). */
-export async function esDescendienteDeRaiz(folderId: string, maxDepth = 10): Promise<boolean> {
-  const root = rootFolderId();
-  if (folderId === root) return true;
-  let current = folderId;
-  for (let i = 0; i < maxDepth; i++) {
-    const parents = await getParents(current);
-    if (parents.length === 0) return false;
-    if (parents.includes(root)) return true;
-    current = parents[0]!;
-    if (current === root) return true;
-  }
-  return false;
-}
-
-/** Padres de un archivo/carpeta. */
-async function getParents(fileId: string): Promise<string[]> {
-  const res = await driveGet(`/files/${encodeURIComponent(fileId)}`, "fields=parents");
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.parents ?? [];
-}
-
-/** True si el archivo está dentro de la carpeta indicada. */
-export async function fileInFolder(fileId: string, folderId: string): Promise<boolean> {
-  try {
-    return (await getParents(fileId)).includes(folderId);
-  } catch {
-    return false;
-  }
-}
-
 /** Descarga el binario de un archivo público (alt=media). */
 export async function downloadFile(fileId: string): Promise<Buffer> {
   const res = await driveGet(`/files/${encodeURIComponent(fileId)}`, "alt=media");

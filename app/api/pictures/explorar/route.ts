@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { esDescendienteDeRaiz, getFolderName, listFotos, listSocios, listSubfolders, rootFolderId } from "@/lib/server/driveApi";
+import { getFolderName, listFotos, listSocios, listSubfolders, rootFolderId } from "@/lib/server/driveApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,23 +10,16 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const folderId = searchParams.get("folderId") || "";
+  const folderId = searchParams.get("folderId") || rootFolderId();
+  const esRaiz = folderId === rootFolderId();
 
   try {
-    if (!folderId) {
-      // Raíz
-      const [folders, fotos] = await Promise.all([listSocios(), listFotos(rootFolderId())]);
-      return NextResponse.json({ folderId: rootFolderId(), nombre: (await getFolderName(rootFolderId())) ?? "Raíz", folders, fotosCount: fotos.length, esRaiz: true });
-    }
-    if (!(await esDescendienteDeRaiz(folderId))) {
-      return NextResponse.json({ error: "Carpeta fuera de la raíz." }, { status: 403 });
-    }
     const [folders, fotos, nombre] = await Promise.all([
-      listSubfolders(folderId),
+      esRaiz ? listSocios() : listSubfolders(folderId),
       listFotos(folderId),
       getFolderName(folderId),
     ]);
-    return NextResponse.json({ folderId, nombre: nombre ?? "Carpeta", folders, fotosCount: fotos.length, esRaiz: folderId === rootFolderId() });
+    return NextResponse.json({ folderId, nombre: nombre ?? "Carpeta", folders, fotosCount: fotos.length, esRaiz });
   } catch (e) {
     console.error("[pictures/explorar]", e);
     return NextResponse.json({ error: "No se pudo leer la carpeta." }, { status: 500 });
