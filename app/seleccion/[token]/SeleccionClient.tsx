@@ -32,8 +32,11 @@ interface Foto {
   height?: number;
 }
 
+// La versión (v) sirve para invalidar la caché de la CDN cuando cambia el
+// procesamiento de las imágenes (subila si cambiás el proxy de sharp).
+const IMG_V = 2;
 const imgUrl = (token: string, id: string, size: "thumb" | "preview") =>
-  `/api/pictures/img/${encodeURIComponent(id)}?size=${size}&token=${encodeURIComponent(token)}`;
+  `/api/pictures/img/${encodeURIComponent(id)}?size=${size}&v=${IMG_V}&token=${encodeURIComponent(token)}`;
 
 export function SeleccionClient({ token }: { token: string }) {
   const [fotos, setFotos] = useState<Foto[]>([]);
