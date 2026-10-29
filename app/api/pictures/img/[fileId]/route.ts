@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { decodeToken, downloadFile, esSocioValido, fileInFolder } from "@/lib/server/driveApi";
+import { decodeToken, downloadFile, esDescendienteDeRaiz, fileInFolder } from "@/lib/server/driveApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { fileId: string }
   if (!folderId) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
   try {
-    const [ok1, ok2] = await Promise.all([fileInFolder(fileId, folderId), esSocioValido(folderId)]);
+    const [ok1, ok2] = await Promise.all([fileInFolder(fileId, folderId), esDescendienteDeRaiz(folderId)]);
     if (!ok1 || !ok2) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
     const data = await downloadFile(fileId);

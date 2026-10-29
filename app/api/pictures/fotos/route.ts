@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { decodeToken, esSocioValido, getFolderName, listFotos } from "@/lib/server/driveApi";
+import { decodeToken, esDescendienteDeRaiz, getFolderName, listFotos } from "@/lib/server/driveApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   if (!folderId) return NextResponse.json({ error: "Link inválido." }, { status: 404 });
 
   try {
-    if (!(await esSocioValido(folderId))) {
+    if (!(await esDescendienteDeRaiz(folderId))) {
       return NextResponse.json({ error: "Link inválido." }, { status: 404 });
     }
     const [fotos, socioNombre] = await Promise.all([listFotos(folderId), getFolderName(folderId)]);
