@@ -17,6 +17,7 @@ export type ModuleKey =
   | "cobros"
   | "reportes"
   | "info"
+  | "pictures"
   | "configuracion"
   | "usuarios"
   | "permisos";
